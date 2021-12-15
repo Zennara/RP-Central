@@ -9,10 +9,33 @@ import asyncio
 from discord import Embed
 from discord import Webhook, AsyncWebhookAdapter
 from replit import db
+import json
 
 #declare client
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
+
+#delete database
+CLEAR = False
+if CLEAR:
+  count = 0
+  for key in db.keys():
+    del db[key]
+    count += 1
+    print(count)
+
+#dump data in database.json
+DUMP = True
+if DUMP:
+  data2 = {}
+  count = 0
+  for key in db.keys():
+    data2[str(key)] = db[str(key)]
+    count += 1
+    print(str(count))
+
+  with open("database.json", 'w') as f:
+    json.dump(str(data2), f)
 
 @client.event
 async def on_ready():
@@ -42,7 +65,7 @@ async def on_message(message):
 
     def check(m):
       if m.author == message.author:
-        if m.content not in dict(data[message.guild.id]):
+        if m.content not in data[message.guild.id]:
           return True
           print("go")
 
