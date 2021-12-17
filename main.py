@@ -75,8 +75,8 @@ async def on_message(message):
 
   #create new character
   if messagecontent == prefix + "create":
-    embed = discord.Embed(color=0x593695, description=message.author.name + ", please enter your character name.")
-    embed.set_author(name="📝 | @" + client.user.name)
+    embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.")
+    embed.set_author(name="📝 | @" + message.author.name)
     sentMessage = await message.channel.send(embed=embed)
     
     #check for msg
@@ -107,11 +107,17 @@ async def on_message(message):
     msg = await client.wait_for('message', check=check)
 
     #edit embed
-    embed = discord.Embed(color=0x593695, description=message.author.name + ", please enter an image URL for your character, or type NA for no image.")
-    embed.set_author(name="📝 | @" + client.user.name)
+    embed = discord.Embed(color=0xFFFFFF, description="Please enter an image URL for your character, or type NA for no image.")
+    embed.set_author(name="📝 | @" + message.author.name)
     await sentMessage.edit(embed=embed)
     #image url
     url = await client.wait_for('message', check=checkURL)
+
+    #confirmation message
+    embed = discord.Embed(color=0x00FF00, description="Your character, **" + msg.content + "**, was created.")
+    embed.set_author(name="@" + message.author.name)
+    embed.set_thumbnail(url="" if url.content == "na" else url.content)
+    await sentMessage.edit(embed=embed)
     
     #create character
     db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = url.content
