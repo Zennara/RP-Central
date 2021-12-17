@@ -66,12 +66,11 @@ async def on_message(message):
     with open("database.json", 'w') as f:
       json.dump(str(data2), f)
 
-  #write new dict
-  WRITE = False
-  if WRITE:
-    db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
-
   messagecontent = message.content.lower()
+
+  #write new dict
+  if messagecontent == "z/clear":
+    db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
 
   #create new character
   if messagecontent == prefix + "create":
