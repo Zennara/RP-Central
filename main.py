@@ -50,7 +50,6 @@ async def on_guild_join(guild):
 
 async def error(message, code):
   embed = discord.Embed(color=0xff0000, description=code)
-  embed.set_author(name="Error")
   await message.channel.send(embed=embed)
 
 @client.event
@@ -107,7 +106,7 @@ async def on_message(message):
         embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][x] if db[str(message.guild.id)]["accounts"][str(message.author.id)][x] != "na" else "")
         await message.channel.send(embed=embed)
     else:
-      error(message, message.author.name + " does not have any characters.")
+      await error(message, message.author.name + " does not have any characters.")
 
   #create new character
   if messagecontent == prefix + "create":
@@ -119,12 +118,14 @@ async def on_message(message):
     def check(m):
       if m.author == message.author:
         #test and create account for user
-        if str(m.author.id) not in db[(str(m.guild.id))]["accounts"].keys():
-          print("test")
+        if str(m.author.id) in db[(str(m.guild.id))]["accounts"].keys():
+          if m.content not in db[str(message.guild.id)]["accounts"][str(m.author.id)]:
+            return True
+          else:
+            asyncio.create_task(error(m, "Character already exists."))
+        else:
           db[(str(m.guild.id))]["accounts"][str(m.author.id)] = {}
-        if m.content not in db[str(message.guild.id)]["accounts"][str(m.author.id)]:
-          print("go")
-          return True
+        
     #check if url is valid
     def checkURL(m):
       if m.author == message.author:
@@ -137,7 +138,7 @@ async def on_message(message):
           if r.headers["content-type"] in image_formats:
             return True
         except:
-          pass
+          asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))
           
     #wait for response message for name
     msg = await client.wait_for('message', check=check)
