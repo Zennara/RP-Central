@@ -48,6 +48,11 @@ async def on_guild_join(guild):
   if guild.id not in dict(db).keys():
     db[str(guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
 
+async def error(message, code):
+  embed = discord.Embed(color=0xff0000, description=code)
+  embed.set_author(name="Error")
+  await message.channel.send(embed=embed)
+
 @client.event
 async def on_message(message):
   #declare database
@@ -102,9 +107,7 @@ async def on_message(message):
         embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][x] if db[str(message.guild.id)]["accounts"][str(message.author.id)][x] != "na" else "")
         await message.channel.send(embed=embed)
     else:
-      embed = discord.Embed(color=0xff0000, description=message.author.name + " does not have any characters.")
-      embed.set_author(name="Error")
-      await message.channel.send(embed=embed)
+      error(message, message.author.name + " does not have any characters.")
 
   #create new character
   if messagecontent == prefix + "create":
