@@ -10,6 +10,7 @@ from discord import Embed
 from discord import Webhook, AsyncWebhookAdapter
 from replit import db
 import json
+import requests
 
 #declare client
 intents = discord.Intents.all()
@@ -76,7 +77,8 @@ async def on_message(message):
   if messagecontent == prefix + "create":
     embed = discord.Embed(color=0x593695, description=message.author.name + ", please enter your character name.")
     embed.set_author(name="📝 | @" + client.user.name)
-    await message.channel.send(embed=embed)
+    sentMessage = await message.channel.send(embed=embed)
+    
     #check for msg
     def check(m):
       if m.author == message.author:
@@ -87,10 +89,32 @@ async def on_message(message):
         if m.content not in db[str(message.guild.id)]["accounts"][str(m.author.id)]:
           print("go")
           return True
-    #wait for response message
+    #check if url is valid
+    def checkURL(m):
+      if m.author == message.author:
+        if m.content.lower() == "na":
+          return True
+        try:
+          #test if content is valid picture url
+          image_formats = ("image/png", "image/jpeg", "image/jpg")
+          r = requests.head(m.content)
+          if r.headers["content-type"] in image_formats:
+            return True
+        except:
+          pass
+          
+    #wait for response message for name
     msg = await client.wait_for('message', check=check)
+
+    #edit embed
+    embed = discord.Embed(color=0x593695, description=message.author.name + ", please enter an image URL for your character, or type NA for no image.")
+    embed.set_author(name="📝 | @" + client.user.name)
+    await sentMessage.edit(embed=embed)
+    #image url
+    url = await client.wait_for('message', check=checkURL)
+    
     #create character
-    db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = ""
+    db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = url.content
 
   #send message as bot
   if messagecontent.startswith(prefix):
@@ -100,15 +124,14 @@ async def on_message(message):
       count = 0
       for x in glist:
         if messagecontent[len(prefix):].startswith(x.lower()):
-          print("gg")
           break
         count += 1
       character = glist[count]
   
-    embed = discord.Embed(color=0x2C2F33, description=messagecontent[len(prefix)+len(glist[count]):])
-    embed.set_author(name=character)
-    embed.set_thumbnail(url="https://www.seekpng.com/png/detail/45-452870_png-rick-walking-dead-rick-grimes-png.png")
-    await message.channel.send(embed=embed)
+      embed = discord.Embed(color=0x2C2F33, description=messagecontent[len(prefix)+len(glist[count]):])
+      embed.set_author(name=character)
+      embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] if db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] != "na" else "")
+      await message.channel.send(embed=embed)
 
 keep_alive.keep_alive() 
 #keep the bot running after the window closes, use UptimeRobot to ping the website at least every <60min. to prevent the website from going to sleep, turning off the bot
