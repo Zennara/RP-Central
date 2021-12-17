@@ -61,13 +61,12 @@ async def on_message(message):
     for key in db.keys():
       data2[str(key)] = db[str(key)]
       count += 1
-      print(str(count))
 
     with open("database.json", 'w') as f:
       json.dump(str(data2), f)
 
   #write new dict
-  WRITE = True
+  WRITE = False
   if WRITE:
     db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
 
@@ -78,7 +77,6 @@ async def on_message(message):
     embed = discord.Embed(color=0x593695, description=message.author.name + ", please enter your character name.")
     embed.set_author(name="📝 | @" + client.user.name)
     await message.channel.send(embed=embed)
-
     #check for msg
     def check(m):
       if m.author == message.author:
@@ -89,14 +87,25 @@ async def on_message(message):
         if m.content not in db[str(message.guild.id)]["accounts"][str(m.author.id)]:
           print("go")
           return True
-
     #wait for response message
     msg = await client.wait_for('message', check=check)
-
     #create character
-    db[(str(message.guild.id))]["accounts"][str(message.author.id)][msg.content] = ""
+    db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = ""
 
+  #send message as bot
+  if messagecontent.startswith(prefix):
+    glist = list(db[str(message.guild.id)]["accounts"][str(message.author.id)].keys())
+    gmap = map(lambda x: x.lower(), glist)
+    if messagecontent[len(prefix):].startswith(tuple(gmap)):
+      count = 0
+      for x in glist:
+        if messagecontent[len(prefix):].startswith(x.lower()):
+          print("gg")
+          break
+        count += 1
+      character = glist[count]
 
+      
 
 keep_alive.keep_alive() 
 #keep the bot running after the window closes, use UptimeRobot to ping the website at least every <60min. to prevent the website from going to sleep, turning off the bot
