@@ -43,8 +43,6 @@ async def on_ready():
   print("\nRP Central Ready\n")
   await client.change_presence(activity=discord.Game(name="a RP experience"))
 
-prefix = "z/"
-
 @client.event
 async def on_guild_join(guild):
   if guild.id not in dict(db).keys():
@@ -54,6 +52,9 @@ async def on_guild_join(guild):
 async def on_message(message):
   #declare database
   global db
+
+  #get prefix
+  prefix = db[str(message.guild.id)]["prefix"]
 
   DUMP = True
   if DUMP:
@@ -71,6 +72,13 @@ async def on_message(message):
   #write new dict
   if messagecontent == "z/clear":
     db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
+
+  #change prefix
+  if messagecontent.startswith(prefix + "prefix"):
+    db[str(message.guild.id)]["prefix"] = messagecontent.split()[1:][0]
+    embed = discord.Embed(color=0x00FF00, description ="Prefix is now `" + messagecontent.split()[1:][0] + "`")
+    embed.set_author(name="Prefix Change")
+    await message.channel.send(embed=embed)
 
   #help command
   if messagecontent == prefix + "help":
