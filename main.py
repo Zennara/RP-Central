@@ -72,6 +72,24 @@ async def on_message(message):
   if messagecontent == "z/clear":
     db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
 
+  #list your characters
+  if messagecontent == prefix + "characters":
+    #check if user is in database
+    if str(message.author.id) in db[(str(message.guild.id))]["accounts"].keys():
+      embed = discord.Embed(color=0x00FF00)
+      embed.set_author(name=message.author.name + "'s Characters")
+      await message.channel.send(embed=embed)
+      #loop through characters
+      for x in db[(str(message.guild.id))]["accounts"][str(message.author.id)]:
+        embed = discord.Embed(color=0xFFFFFF)
+        embed.set_author(name=x)
+        embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][x] if db[str(message.guild.id)]["accounts"][str(message.author.id)][x] != "na" else "")
+        await message.channel.send(embed=embed)
+    else:
+      embed = discord.Embed(color=0xff0000, description=message.author.name + " does not have any characters.")
+      embed.set_author(name="Error")
+      await message.channel.send(embed=embed)
+
   #create new character
   if messagecontent == prefix + "create":
     embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.")
