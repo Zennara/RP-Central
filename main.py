@@ -72,6 +72,14 @@ async def on_message(message):
   if messagecontent == "z/clear":
     db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
 
+  #help command
+  if messagecontent == prefix + "help":
+    text= "My prefix is `" + prefix + "`. You can change this at any time with `" + prefix + "prefix`.\n\n`"+prefix+"help` - - *Displays this message!*\n`"+prefix+"create` - *Create a new character.*\n`"+prefix+"characters` - *Display your characters.*\n`"+prefix+"<characterName> [message]` - *Send a message as your character.*"
+    embed = discord.Embed(color=0x00FF00, description = text)
+    embed.set_author(name="RP Central Help")
+    embed.set_footer(text= "________________________\n<> Required | [] Optional\nMade By Zennara#8377")
+    await message.channel.send(embed=embed)
+
   #list your characters
   if messagecontent == prefix + "characters":
     #check if user is in database
