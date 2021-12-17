@@ -47,13 +47,29 @@ prefix = "z/"
 @client.event
 async def on_guild_join(guild):
   if guild.id not in dict(db).keys():
-    db[guild.id] = {"prefix" : "z/", "role": "", "accounts":{}}
+    db[str(guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
 
 @client.event
 async def on_message(message):
   #declare database
   global db
-  data = dict(db)
+
+  DUMP = True
+  if DUMP:
+    data2 = {}
+    count = 0
+    for key in db.keys():
+      data2[str(key)] = db[str(key)]
+      count += 1
+      print(str(count))
+
+    with open("database.json", 'w') as f:
+      json.dump(str(data2), f)
+
+  #write new dict
+  WRITE = True
+  if WRITE:
+    db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
 
   messagecontent = message.content.lower()
 
@@ -63,16 +79,22 @@ async def on_message(message):
     embed.set_author(name="📝 | @" + client.user.name)
     await message.channel.send(embed=embed)
 
+    #check for msg
     def check(m):
       if m.author == message.author:
-        if m.content not in data[message.guild.id]:
-          return True
+        #test and create account for user
+        if str(m.author.id) not in db[(str(m.guild.id))]["accounts"].keys():
+          print("test")
+          db[(str(m.guild.id))]["accounts"][str(m.author.id)] = {}
+        if m.content not in db[str(message.guild.id)]["accounts"][str(m.author.id)]:
           print("go")
+          return True
 
+    #wait for response message
     msg = await client.wait_for('message', check=check)
 
-  #remake database
-  db = data
+    #create character
+    db[(str(message.guild.id))]["accounts"][str(message.author.id)][msg.content] = ""
 
 
 
