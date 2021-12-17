@@ -104,8 +104,11 @@ async def on_message(message):
           break
         count += 1
       character = glist[count]
-
-      
+  
+    embed = discord.Embed(color=0x2C2F33, description=messagecontent[len(prefix)+len(glist[count]):])
+    embed.set_author(name=character)
+    embed.set_thumbnail(url="https://www.seekpng.com/png/detail/45-452870_png-rick-walking-dead-rick-grimes-png.png")
+    await message.channel.send(embed=embed)
 
 keep_alive.keep_alive() 
 #keep the bot running after the window closes, use UptimeRobot to ping the website at least every <60min. to prevent the website from going to sleep, turning off the bot
