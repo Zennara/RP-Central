@@ -23,7 +23,6 @@ if CLEAR:
   for key in db.keys():
     del db[key]
     count += 1
-    print(count)
 
 #dump data in database.json
 DUMP = True
@@ -33,7 +32,6 @@ if DUMP:
   for key in db.keys():
     data2[str(key)] = db[str(key)]
     count += 1
-    print(str(count))
 
   with open("database.json", 'w') as f:
     json.dump(str(data2), f)
@@ -97,7 +95,6 @@ async def on_message(message):
     #check if user is in database
     if str(message.author.id) in db[(str(message.guild.id))]["accounts"].keys():
       #check if user has character
-      print(db[str(message.guild.id)]["accounts"][str(message.author.id)].value)
       if db[str(message.guild.id)]["accounts"][str(message.author.id)].value!= {}:
         embed = discord.Embed(color=0x00FF00)
         embed.set_author(name=message.author.name + "'s Characters")
