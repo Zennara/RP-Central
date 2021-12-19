@@ -95,7 +95,7 @@ async def on_message(message):
 
   #help command
   if messagecontent == prefix + "help":
-    text= "My prefix is `" + prefix + "`. You can change this at any time with `" + prefix + "prefix`.\n\n`"+prefix+"help` - - *Displays this message!*\n`"+prefix+"create` - *Create a new character.*\n`"+prefix+"characters` - *Display your characters.*\n`"+prefix+"<characterName> [message]` - *Send a message as your character.*"
+    text= "My prefix is `" + prefix + "`. You can change this at any time with `" + prefix + "prefix`.\n\n`"+prefix+"help` - *Displays this message!*\n`"+prefix+"create` - *Create a new character.*\n`"+prefix+"characters` - *Display your characters.*\n`"+prefix+"<character> [message]` - *Send a message as your character.*\n`"+prefix+"del <character>` - *Deletes a character.*"
     embed = discord.Embed(color=0x00FF00, description = text)
     embed.set_author(name="RP Central Help")
     embed.set_footer(text= "________________________\n<> Required | [] Optional\nMade By Zennara#8377")
