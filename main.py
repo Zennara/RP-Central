@@ -96,15 +96,20 @@ async def on_message(message):
   if messagecontent == prefix + "characters":
     #check if user is in database
     if str(message.author.id) in db[(str(message.guild.id))]["accounts"].keys():
-      embed = discord.Embed(color=0x00FF00)
-      embed.set_author(name=message.author.name + "'s Characters")
-      await message.channel.send(embed=embed)
-      #loop through characters
-      for x in db[(str(message.guild.id))]["accounts"][str(message.author.id)]:
-        embed = discord.Embed(color=0xFFFFFF)
-        embed.set_author(name=x)
-        embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][x] if db[str(message.guild.id)]["accounts"][str(message.author.id)][x] != "na" else "")
+      #check if user has character
+      print(db[str(message.guild.id)]["accounts"][str(message.author.id)].value)
+      if db[str(message.guild.id)]["accounts"][str(message.author.id)].value!= {}:
+        embed = discord.Embed(color=0x00FF00)
+        embed.set_author(name=message.author.name + "'s Characters")
         await message.channel.send(embed=embed)
+        #loop through characters
+        for x in db[(str(message.guild.id))]["accounts"][str(message.author.id)]:
+          embed = discord.Embed(color=0xFFFFFF)
+          embed.set_author(name=x)
+          embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][x] if db[str(message.guild.id)]["accounts"][str(message.author.id)][x] != "na" else "")
+        await message.channel.send(embed=embed)
+      else:
+        await error(message, message.author.name + " does not have any characters.")
     else:
       await error(message, message.author.name + " does not have any characters.")
 
@@ -118,13 +123,12 @@ async def on_message(message):
     def check(m):
       if m.author == message.author:
         #test and create account for user
-        if str(m.author.id) in db[(str(m.guild.id))]["accounts"].keys():
-          if m.content not in db[str(message.guild.id)]["accounts"][str(m.author.id)]:
-            return True
-          else:
-            asyncio.create_task(error(m, "Character already exists."))
-        else:
+        if str(m.author.id) not in db[(str(m.guild.id))]["accounts"].keys():
           db[(str(m.guild.id))]["accounts"][str(m.author.id)] = {}
+        if m.content not in db[str(message.guild.id)]["accounts"][str(m.author.id)]:
+          return True
+        else:
+          asyncio.create_task(error(m, "Character already exists."))
         
     #check if url is valid
     def checkURL(m):
