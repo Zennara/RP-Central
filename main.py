@@ -75,6 +75,17 @@ async def on_message(message):
   if messagecontent == "z/clear":
     db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
 
+  #delete character
+  if messagecontent.startswith(prefix + "del"):
+    print(message.content[len(prefix)+4:])
+    if message.content[len(prefix)+4:] in db[str(message.guild.id)]["accounts"][str(message.author.id)]:
+      del db[str(message.guild.id)]["accounts"][str(message.author.id)][message.content[len(prefix)+4:]]
+      embed = discord.Embed(color=0x00FF00, description = message.author.name+"'s character, **"+message.content[len(prefix)+4:]+"**, was deleted.")
+      embed.set_author(name="Character Deletion")
+      await message.channel.send(embed=embed)
+    else:
+      await error(message, "Character does not exist.")
+
   #change prefix
   if messagecontent.startswith(prefix + "prefix"):
     db[str(message.guild.id)]["prefix"] = messagecontent.split()[1:][0]
