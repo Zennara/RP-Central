@@ -78,10 +78,14 @@ async def on_message(message):
 
   messagecontent = message.content.lower()
 
+  print(messagecontent)
+
+  
   #write new dict
   if messagecontent == "z/clear":
     db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
 
+    
   #delete character
   if messagecontent.startswith(prefix + "del"):
     print(message.content[len(prefix)+4:])
@@ -92,7 +96,6 @@ async def on_message(message):
       await message.channel.send(embed=embed)
     else:
       await error(message, "Character does not exist.")
-
   #change prefix
   if messagecontent.startswith(prefix + "prefix"):
     db[str(message.guild.id)]["prefix"] = messagecontent.split()[1:][0]
@@ -100,14 +103,16 @@ async def on_message(message):
     embed.set_author(name="Prefix Change")
     await message.channel.send(embed=embed)
 
+    
   #help command
   if messagecontent == prefix + "help":
-    text= "My prefix is `" + prefix + "`. You can change this at any time with `" + prefix + "prefix`.\n\n`"+prefix+"help` - *Displays this message!*\n`"+prefix+"create` - *Create a new character.*\n`"+prefix+"characters` - *Display your characters.*\n`"+prefix+"<character> [message]` - *Send a message as your character.*\n`"+prefix+"del <character>` - *Deletes a character.*"
+    text= "My prefix is `" + prefix + "`. You can change this at any time with `" + prefix + "prefix`.\n\n`"+prefix+"help` - *Displays this message!*\n`"+prefix+"create` - *Create a new character.*\n`"+prefix+"characters` - *Display your characters.*\n`"+prefix+"<character> [#channel] [message]` - *Send a message as your character.*\n`"+prefix+"del <character>` - *Deletes a character.*"
     embed = discord.Embed(color=0x00FF00, description = text)
     embed.set_author(name="RP Central Help")
     embed.set_footer(text= "________________________\n<> Required | [] Optional\nMade By Zennara#8377")
     await message.channel.send(embed=embed)
 
+    
   #list your characters
   if messagecontent == prefix + "characters":
     #check if user is in database
@@ -128,12 +133,12 @@ async def on_message(message):
     else:
       await error(message, message.author.name + " does not have any characters.")
 
+      
   #create new character
   if messagecontent == prefix + "create":
     embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.")
     embed.set_author(name="📝 | @" + message.author.name)
     sentMessage = await message.channel.send(embed=embed)
-    
     #check for msg
     def check(m):
       if m.author == message.author:
@@ -143,8 +148,7 @@ async def on_message(message):
         if m.content not in db[str(message.guild.id)]["accounts"][str(m.author.id)]:
           return True
         else:
-          asyncio.create_task(error(m, "Character already exists."))
-        
+          asyncio.create_task(error(m, "Character already exists.")) 
     #check if url is valid
     def checkURL(m):
       if m.author == message.author:
@@ -157,28 +161,31 @@ async def on_message(message):
           if r.headers["content-type"] in image_formats:
             return True
         except:
-          asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))
-          
+          asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))   
     #wait for response message for name
     msg = await client.wait_for('message', check=check)
-
     #edit embed
     embed = discord.Embed(color=0xFFFFFF, description="Please enter an image URL for your character, or type NA for no image.")
     embed.set_author(name="📝 | @" + message.author.name)
     await sentMessage.edit(embed=embed)
     #image url
     url = await client.wait_for('message', check=checkURL)
-
     #confirmation message
     embed = discord.Embed(color=0x00FF00, description="Your character, **" + msg.content + "**, was created.")
     embed.set_author(name="@" + message.author.name)
     embed.set_thumbnail(url="" if url.content == "na" else url.content)
     await sentMessage.edit(embed=embed)
-    
     #create character
     db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = url.content
 
+    
   #send message as bot
+  #default channel
+  chnl = message.channel
+  chnlCheck = False
+  #set error default
+  errorCh=False
+  #check for prefix
   if messagecontent.startswith(prefix):
     glist = list(db[str(message.guild.id)]["accounts"][str(message.author.id)].keys())
     gmap = map(lambda x: x.lower(), glist)
@@ -189,15 +196,41 @@ async def on_message(message):
           break
         count += 1
       character = glist[count]
-  
-      embed = discord.Embed(color=0x2C2F33, description=messagecontent[len(prefix)+len(glist[count]):])
-      embed.set_author(name=character)
-      embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] if db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] != "na" else "")
-      await message.channel.send(embed=embed)
+      #check if message is channel mention
+      print(messagecontent[len(prefix)+len(glist[count])+1:])
+      if messagecontent[len(prefix)+len(glist[count])+1:].startswith("<#"):
+        #check if message is long enough
+        print(3)
+        if len(messagecontent) >= len(prefix)+len(glist[count])+22:
+          print(2)
+          #check if there is valid channel
+          try:
+            chnl = message.guild.get_channel(int(messagecontent[len(prefix)+len(glist[count])+3:len(prefix)+len(glist[count])+21]))
+            chnlCheck = True
+          except:
+            await error(message, "Invalid channel. Please mention the channel.")
+            errorCh=True
+        else:
+          await error(message, "Invalid channel. Please mention the channel.")
+          errorCh=True
+      #get correct text (remove channel)
+      if chnl == message.channel and chnlCheck:
+        text = messagecontent[len(prefix)+len(glist[count]):]
+      else:
+        text = messagecontent[len(prefix)+len(glist[count])+22:] 
+      #send message
+      if not errorCh:
+        embed = discord.Embed(color=0x2C2F33, description=text)
+        embed.set_author(name=character)
+        embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] if db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] != "na" else "")
+        await chnl.send(embed=embed)
+        #delete old message
+        await message.delete()     
+
 
 keep_alive.keep_alive() 
 #keep the bot running after the window closes, use UptimeRobot to ping the website at least every <60min. to prevent the website from going to sleep, turning off the bot
 
 #run bot
-#Bot token is in .env file on repl.it, which isn't viewable by data
+#Bot TOKEN is in secret var on repl.it, which isn't viewable by others
 client.run(os.environ.get("TOKEN"))
