@@ -215,9 +215,9 @@ async def on_message(message):
           errorCh=True
       #get correct text (remove channel)
       if chnlCheck:
-        gtext = messagecontent[len(prefix)+len(glist[count])+22:]
+        gtext = message.content[len(prefix)+len(glist[count])+22:]
       else:
-        gtext = messagecontent[len(prefix)+len(glist[count]):]
+        gtext = message.content[len(prefix)+len(glist[count]):]
       #send message
       if not errorCh:
         #get all files
@@ -231,7 +231,6 @@ async def on_message(message):
         else:
           webhook= await chnl.create_webhook(name="RPCentral Required",avatar=None,reason="For the RP Central send msg command.")
         await webhook.send(username=character, avatar_url=db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] if db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] != "na" else "", content=gtext, files=files)
-      
         #delete old message
         await message.delete()     
 
