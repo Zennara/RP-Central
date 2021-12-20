@@ -11,6 +11,7 @@ from discord import Webhook, AsyncWebhookAdapter
 from replit import db
 import json
 import requests
+import aiohttp
 
 #api limit checker
 r = requests.head(url="https://discord.com/api/v1")
@@ -78,7 +79,9 @@ async def on_message(message):
 
   messagecontent = message.content.lower()
 
-  print(messagecontent)
+  print("\n\nCONTENT: " +message.content)
+  print("\nMODDEDCONT: " +messagecontent)
+  
 
   
   #write new dict
@@ -197,12 +200,9 @@ async def on_message(message):
         count += 1
       character = glist[count]
       #check if message is channel mention
-      print(messagecontent[len(prefix)+len(glist[count])+1:])
       if messagecontent[len(prefix)+len(glist[count])+1:].startswith("<#"):
         #check if message is long enough
-        print(3)
         if len(messagecontent) >= len(prefix)+len(glist[count])+22:
-          print(2)
           #check if there is valid channel
           try:
             chnl = message.guild.get_channel(int(messagecontent[len(prefix)+len(glist[count])+3:len(prefix)+len(glist[count])+21]))
@@ -214,16 +214,24 @@ async def on_message(message):
           await error(message, "Invalid channel. Please mention the channel.")
           errorCh=True
       #get correct text (remove channel)
-      if chnl == message.channel and chnlCheck:
-        text = messagecontent[len(prefix)+len(glist[count]):]
+      if chnlCheck:
+        gtext = messagecontent[len(prefix)+len(glist[count])+22:]
       else:
-        text = messagecontent[len(prefix)+len(glist[count])+22:] 
+        gtext = messagecontent[len(prefix)+len(glist[count]):]
       #send message
       if not errorCh:
-        embed = discord.Embed(color=0x2C2F33, description=text)
-        embed.set_author(name=character)
-        embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] if db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] != "na" else "")
-        await chnl.send(embed=embed)
+        #get all files
+        files = []
+        for ach in message.attachments:
+          files.append(await ach.to_file())
+        #get webhook
+        hooks = await chnl.webhooks()
+        if hooks:
+          webhook = hooks[0]
+        else:
+          webhook= await chnl.create_webhook(name="RPCentral Required",avatar=None,reason="For the RP Central send msg command.")
+        await webhook.send(username=character, avatar_url=db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] if db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] != "na" else "", content=gtext, files=files)
+      
         #delete old message
         await message.delete()     
 
