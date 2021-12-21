@@ -157,13 +157,17 @@ async def on_message(message):
       if m.author == message.author:
         if m.content.lower() == "na":
           return True
-        try:
+        if m.content.lower().startswith("http") and m.content.lower().endswith((".png",".jpg",".jpeg")):
           #test if content is valid picture url
           image_formats = ("image/png", "image/jpeg", "image/jpg")
-          r = requests.head(m.content)
+          try:
+            r = requests.head(m.content, timeout=3)
+          except:
+            asyncio.create_task(error(m, "Connection Timeout. Check your URL."))
+            return False
           if r.headers["content-type"] in image_formats:
             return True
-        except:
+        else:
           asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))   
     #wait for response message for name
     msg = await client.wait_for('message', check=check)
