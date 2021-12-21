@@ -138,6 +138,9 @@ async def on_message(message):
 
       
   #create new character
+  #default var vals
+  global attach
+  attach = False
   if messagecontent == prefix + "create":
     embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.")
     embed.set_author(name="📝 | @" + message.author.name)
@@ -154,6 +157,7 @@ async def on_message(message):
           asyncio.create_task(error(m, "Character already exists.")) 
     #check if url is valid
     def checkURL(m):
+      global attach
       if m.author == message.author:
         if m.content.lower() == "na":
           return True
@@ -168,7 +172,16 @@ async def on_message(message):
           if r.headers["content-type"] in image_formats:
             return True
         else:
-          asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))   
+          #ensure list contains element
+          if m.attachments:
+            #get url
+            if m.attachments[0].url.lower().startswith("http") and m.attachments[0].url.lower().endswith((".png",".jpeg",".jpg")):
+              attach = True
+              return True
+            else:
+              asyncio.create_task(error(m, "Invalid Attachment Type."))   
+          else:
+            asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))
     #wait for response message for name
     msg = await client.wait_for('message', check=check)
     #edit embed
@@ -177,13 +190,21 @@ async def on_message(message):
     await sentMessage.edit(embed=embed)
     #image url
     url = await client.wait_for('message', check=checkURL)
+    
     #confirmation message
     embed = discord.Embed(color=0x00FF00, description="Your character, **" + msg.content + "**, was created.")
     embed.set_author(name="@" + message.author.name)
-    embed.set_thumbnail(url="" if url.content == "na" else url.content)
+    #get thumbnail url for characters
+    if url.content == "na":
+      thumb = ""
+    elif attach:
+      thumb = url.attachments[0].url
+    else:
+      thumb = url.content
+    embed.set_thumbnail(url=thumb)
     await sentMessage.edit(embed=embed)
     #create character
-    db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = url.content
+    db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = thumb
 
     
   #send message as bot
