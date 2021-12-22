@@ -88,7 +88,6 @@ async def on_message(message):
   if messagecontent == "z/clear":
     db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
 
-    
   #delete character
   if messagecontent.startswith(prefix + "del"):
     print(message.content[len(prefix)+4:])
@@ -106,7 +105,7 @@ async def on_message(message):
     embed.set_author(name="Prefix Change")
     await message.channel.send(embed=embed)
 
-    
+
   #help command
   if messagecontent == prefix + "help":
     text= "My prefix is `" + prefix + "`. You can change this at any time with `" + prefix + "prefix`.\n\n`"+prefix+"help` - *Displays this message!*\n`"+prefix+"create` - *Create a new character.*\n`"+prefix+"characters` - *Display your characters.*\n`"+prefix+"<character> [#channel] [message]` - *Send a message as your character.*\n`"+prefix+"del <character>` - *Deletes a character.*"
@@ -115,7 +114,7 @@ async def on_message(message):
     embed.set_footer(text= "________________________\n<> Required | [] Optional\nMade By Zennara#8377")
     await message.channel.send(embed=embed)
 
-    
+
   #list your characters
   if messagecontent == prefix + "characters":
     #check if user is in database
@@ -136,17 +135,24 @@ async def on_message(message):
     else:
       await error(message, message.author.name + " does not have any characters.")
 
-      
+
   #create new character
   #default var vals
   global attach
+  global done
   attach = False
+  done = False
   if messagecontent == prefix + "create":
-    embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.")
+    embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.\nEnter `cancel` to stop.")
     embed.set_author(name="📝 | @" + message.author.name)
     sentMessage = await message.channel.send(embed=embed)
     #check for msg
     def check(m):
+      global done
+      #check if done
+      if m.content.lower() == "cancel":
+        done = True
+        return True
       if m.author == message.author:
         #test and create account for user
         if str(m.author.id) not in db[(str(m.guild.id))]["accounts"].keys():
@@ -158,6 +164,10 @@ async def on_message(message):
     #check if url is valid
     def checkURL(m):
       global attach
+      global done
+      if m.content.lower() == "cancel":
+        done = True
+        return True
       if m.author == message.author:
         if m.content.lower() == "na":
           return True
@@ -184,13 +194,22 @@ async def on_message(message):
             asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))
     #wait for response message for name
     msg = await client.wait_for('message', check=check)
+    #check done
+    if done:
+      embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+      await sentMessage.edit(embed=embed)
+      return
     #edit embed
-    embed = discord.Embed(color=0xFFFFFF, description="Please enter an image URL for your character, or type NA for no image.")
+    embed = discord.Embed(color=0xFFFFFF, description="Please enter an image URL for your character, or type `NA` for no image.\nEnter `cancel` to stop.")
     embed.set_author(name="📝 | @" + message.author.name)
     await sentMessage.edit(embed=embed)
     #image url
     url = await client.wait_for('message', check=checkURL)
-    
+    #check done
+    if done:
+      embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+      await sentMessage.edit(embed=embed)
+      return
     #confirmation message
     embed = discord.Embed(color=0x00FF00, description="Your character, **" + msg.content + "**, was created.")
     embed.set_author(name="@" + message.author.name)
@@ -205,8 +224,8 @@ async def on_message(message):
     await sentMessage.edit(embed=embed)
     #create character
     db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = thumb
+  
 
-    
   #send message as bot
   #default channel
   chnl = message.channel
