@@ -219,11 +219,13 @@ async def on_message(message):
         embed.set_author(name=message.author.name + "'s Characters")
         await message.channel.send(embed=embed)
         #loop through characters
+        print(333)
         for x in db[(str(message.guild.id))]["accounts"][str(message.author.id)]:
+          print(444)
           embed = discord.Embed(color=0xFFFFFF)
           embed.set_author(name=x)
           embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][x] if db[str(message.guild.id)]["accounts"][str(message.author.id)][x] != "na" else "")
-        await message.channel.send(embed=embed)
+          await message.channel.send(embed=embed)
       else:
         await error(message, message.author.name + " does not have any characters.")
     else:
