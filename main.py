@@ -58,6 +58,8 @@ async def error(message, code):
   embed = discord.Embed(color=0xff0000, description=code)
   await message.channel.send(embed=embed)
 
+global done
+done=False
 #check for msg
 def check(m):
   global globalMsg
@@ -137,9 +139,13 @@ async def on_message(message):
 
   print("\n\nCONTENT: " +message.content)
   print("\nMODDEDCONT: " +messagecontent)
-  
+
+  #globals
+  global globalMsg
+  global attach
   #edit character
   if messagecontent.startswith(prefix + "edit"):
+    globalMsg = message
     if message.content[len(prefix)+5:] in db[str(message.guild.id)]["accounts"][str(message.author.id)]:
       #get character from list
       glist =  list(db[str(message.guild.id)]["accounts"][str(message.author.id)].keys())
@@ -149,33 +155,73 @@ async def on_message(message):
           break
         count += 1
       character =glist[count]
-      embed = discord.Embed(color=0xFFFFFF, description="React for that edit or ◀️ to finish.\n\n:label: | **Character Name**\n:frame_photo: | **Profile Picture**")
-      embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
-      sentMessage = await message.channel.send(embed=embed)
+      embed2 = discord.Embed(color=0xFFFFFF, description="React for that edit or ◀️ to finish.\n\n:label: | **Character Name**\n:frame_photo: | **Profile Picture**")
+      embed2.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+      sentMessage = await message.channel.send(embed=embed2)
       #add reactions
       await sentMessage.add_reaction('◀️')
       await sentMessage.add_reaction('🏷️')
       await sentMessage.add_reaction('🖼️')
       #reaction def
+      async def removeR(reaction, user):
+        await reaction.remove(user)
       def checkReact(reaction, user):
-        return user == message.author and str(reaction.emoji) in ("◀️","🏷️","🖼️")
-      reaction, user = await client.wait_for('reaction_add', check=checkReact)
-      #seperate emojis
-      if str(reaction.emoji) == "🏷️":
-        embed = discord.Embed(color=0xFFFFFF, description="Please enter your new character name.\nReact ◀️ to go back.")
-        embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
-        await sentMessage.edit(embed=embed)
-      elif str(reaction.emoji) == "🖼️":
-        embed = discord.Embed(color=0xFFFFFF, description="Please enter a new image URL for your character, or type `NA` for no image.\nReact ◀️ to go back.")
-        embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
-        await sentMessage.edit(embed=embed)
-      elif str(reaction.emoji) == "◀️":
-        await sentMessage.clear_reactions()
-        embed = discord.Embed(color=0x00FF00, description = "Editing Complete")
-        await sentMessage.edit(embed=embed)
-        return
-    else:
-      await error(message, "Account does not exist.")
+        asyncio.create_task(removeR(reaction, user))
+        if user == message.author and str(reaction.emoji) in ("◀️","🏷️","🖼️"):
+          return True
+      while True:
+        #define starting embed
+        embed2 = discord.Embed(color=0xFFFFFF, description="React for that edit or ◀️ to finish.\n\n:label: | **Character Name**\n:frame_photo: | **Profile Picture**")
+        embed2.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+        await sentMessage.edit(embed=embed2)
+        reaction, user = await client.wait_for('reaction_add', check=checkReact)
+        #seperate emojis
+        if str(reaction.emoji) == "🏷️":
+          embed = discord.Embed(color=0xFFFFFF, description="Please enter your new character name.\nEnter `cancel` to go back.")
+          embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+          await sentMessage.edit(embed=embed)
+          msg = await client.wait_for('message', check=check)
+          global done
+          if done:
+            continue
+          #remake key
+          db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
+          del db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
+          character = msg.content
+          #confirmation message
+          embed = discord.Embed(color=0x00FF00, description="Your characters name was changed to **" + msg.content + "**.")
+          embed.set_author(name="@" + message.author.name)
+          #embed.set_thumbnail(url= db[str(message.author.id)]["accounts"][str(message.author.id)][character])
+          await message.channel.send(embed=embed)
+        elif str(reaction.emoji) == "🖼️":
+          embed = discord.Embed(color=0xFFFFFF, description="Please enter a new image URL for your character, or type `NA` for no image.\nEnter `cancel` to go back.")
+          embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+          await sentMessage.edit(embed=embed)
+          url = await client.wait_for('message', check=checkURL)
+          if done:
+            continue
+          #get thumbnail url for characters
+          if url.content == "na":
+            thumb = ""
+          elif attach:
+            thumb = url.attachments[0].url
+          else:
+            thumb = url.content
+          #remake key
+          db[str(message.guild.id)]["accounts"][str(message.author.id)][character] = thumb
+          #confirmation message
+          embed = discord.Embed(color=0x00FF00, description="Your character, **"+character+"'s** image was set to:")
+          embed.set_author(name="@" + message.author.name)
+          embed.set_thumbnail(url=thumb)
+          await message.channel.send(embed=embed)
+        elif str(reaction.emoji) == "◀️":
+          await sentMessage.clear_reactions()
+          embed = discord.Embed(color=0x00FF00, description = "Editing Complete")
+          await sentMessage.edit(embed=embed)
+          return
+        continue
+      else:
+        await error(message, "Account does not exist.")
   
   
   #write new dict
@@ -234,8 +280,6 @@ async def on_message(message):
 
   #create new character
   #default var vals
-  global attach
-  global done
   attach = False
   done = False
   if messagecontent == prefix + "create":
@@ -244,7 +288,6 @@ async def on_message(message):
     sentMessage = await message.channel.send(embed=embed)
     #wait for response message for name
     #set global message
-    global globalMsg
     globalMsg = message
     msg = await client.wait_for('message', check=check)
     #check done
