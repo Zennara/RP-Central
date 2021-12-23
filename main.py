@@ -16,9 +16,9 @@ import aiohttp
 #api limit checker
 r = requests.head(url="https://discord.com/api/v1")
 try:
-    print(f"Rate limit {int(r.headers['Retry-After']) / 60} minutes left")
+  print(f"Rate limit {int(r.headers['Retry-After']) / 60} minutes left")
 except:
-    print("No rate limit")
+  print("No rate limit")
 
 #declare client
 intents = discord.Intents.all()
@@ -58,6 +58,62 @@ async def error(message, code):
   embed = discord.Embed(color=0xff0000, description=code)
   await message.channel.send(embed=embed)
 
+#check for msg
+def check(m):
+  global globalMsg
+  global done
+  #check if done
+  if m.content.lower() == "cancel":
+    done = True
+    return True
+  print(1)
+  if m.author == globalMsg.author:
+    print(2)
+    #test and create account for user
+    if str(m.author.id) not in db[(str(m.guild.id))]["accounts"].keys():
+      print(3)
+      db[(str(m.guild.id))]["accounts"][str(m.author.id)] = {}
+    if m.content not in db[str(m.guild.id)]["accounts"][str(m.author.id)]:
+      print(4)
+      return True
+    else:
+      print(5)
+      asyncio.create_task(error(m, "Character already exists.")) 
+#check if url is valid
+def checkURL(m):
+  global attach
+  global done
+  global globalMsg
+  if m.content.lower() == "cancel":
+    done = True
+    return True
+  print(globalMsg.author)
+  if m.author == globalMsg.author:
+    print(11)
+    if m.content.lower() == "na":
+      return True
+    if m.content.lower().startswith("http") and m.content.lower().endswith((".png",".jpg",".jpeg")):
+      #test if content is valid picture url
+      image_formats = ("image/png", "image/jpeg", "image/jpg")
+      try:
+        r = requests.head(m.content, timeout=3)
+      except:
+        asyncio.create_task(error(m, "Connection Timeout. Check your URL."))
+        return False
+      if r.headers["content-type"] in image_formats:
+        return True
+    else:
+    #ensure list contains element
+      if m.attachments:
+        #get url
+        if m.attachments[0].url.lower().startswith("http") and m.attachments[0].url.lower().endswith((".png",".jpeg",".jpg")):
+          attach = True
+          return True
+        else:
+          asyncio.create_task(error(m, "Invalid Attachment Type."))   
+      else:
+        asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))
+
 @client.event
 async def on_message(message):
   #declare database
@@ -82,7 +138,45 @@ async def on_message(message):
   print("\n\nCONTENT: " +message.content)
   print("\nMODDEDCONT: " +messagecontent)
   
-
+  #edit character
+  if messagecontent.startswith(prefix + "edit"):
+    if message.content[len(prefix)+5:] in db[str(message.guild.id)]["accounts"][str(message.author.id)]:
+      #get character from list
+      glist =  list(db[str(message.guild.id)]["accounts"][str(message.author.id)].keys())
+      count = 0
+      for x in glist:
+        if message.content[len(prefix)+5:].startswith(x):
+          break
+        count += 1
+      character =glist[count]
+      embed = discord.Embed(color=0xFFFFFF, description="React for that edit or ◀️ to finish.\n\n:label: | **Character Name**\n:frame_photo: | **Profile Picture**")
+      embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+      sentMessage = await message.channel.send(embed=embed)
+      #add reactions
+      await sentMessage.add_reaction('◀️')
+      await sentMessage.add_reaction('🏷️')
+      await sentMessage.add_reaction('🖼️')
+      #reaction def
+      def checkReact(reaction, user):
+        return user == message.author and str(reaction.emoji) in ("◀️","🏷️","🖼️")
+      reaction, user = await client.wait_for('reaction_add', check=checkReact)
+      #seperate emojis
+      if str(reaction.emoji) == "🏷️":
+        embed = discord.Embed(color=0xFFFFFF, description="Please enter your new character name.\nReact ◀️ to go back.")
+        embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+        await sentMessage.edit(embed=embed)
+      elif str(reaction.emoji) == "🖼️":
+        embed = discord.Embed(color=0xFFFFFF, description="Please enter a new image URL for your character, or type `NA` for no image.\nReact ◀️ to go back.")
+        embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+        await sentMessage.edit(embed=embed)
+      elif str(reaction.emoji) == "◀️":
+        await sentMessage.clear_reactions()
+        embed = discord.Embed(color=0x00FF00, description = "Editing Complete")
+        await sentMessage.edit(embed=embed)
+        return
+    else:
+      await error(message, "Account does not exist.")
+  
   
   #write new dict
   if messagecontent == "z/clear":
@@ -146,53 +240,10 @@ async def on_message(message):
     embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.\nEnter `cancel` to stop.")
     embed.set_author(name="📝 | @" + message.author.name)
     sentMessage = await message.channel.send(embed=embed)
-    #check for msg
-    def check(m):
-      global done
-      #check if done
-      if m.content.lower() == "cancel":
-        done = True
-        return True
-      if m.author == message.author:
-        #test and create account for user
-        if str(m.author.id) not in db[(str(m.guild.id))]["accounts"].keys():
-          db[(str(m.guild.id))]["accounts"][str(m.author.id)] = {}
-        if m.content not in db[str(message.guild.id)]["accounts"][str(m.author.id)]:
-          return True
-        else:
-          asyncio.create_task(error(m, "Character already exists.")) 
-    #check if url is valid
-    def checkURL(m):
-      global attach
-      global done
-      if m.content.lower() == "cancel":
-        done = True
-        return True
-      if m.author == message.author:
-        if m.content.lower() == "na":
-          return True
-        if m.content.lower().startswith("http") and m.content.lower().endswith((".png",".jpg",".jpeg")):
-          #test if content is valid picture url
-          image_formats = ("image/png", "image/jpeg", "image/jpg")
-          try:
-            r = requests.head(m.content, timeout=3)
-          except:
-            asyncio.create_task(error(m, "Connection Timeout. Check your URL."))
-            return False
-          if r.headers["content-type"] in image_formats:
-            return True
-        else:
-          #ensure list contains element
-          if m.attachments:
-            #get url
-            if m.attachments[0].url.lower().startswith("http") and m.attachments[0].url.lower().endswith((".png",".jpeg",".jpg")):
-              attach = True
-              return True
-            else:
-              asyncio.create_task(error(m, "Invalid Attachment Type."))   
-          else:
-            asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))
     #wait for response message for name
+    #set global message
+    global globalMsg
+    globalMsg = message
     msg = await client.wait_for('message', check=check)
     #check done
     if done:
@@ -237,6 +288,7 @@ async def on_message(message):
     glist = list(db[str(message.guild.id)]["accounts"][str(message.author.id)].keys())
     gmap = map(lambda x: x.lower(), glist)
     if messagecontent[len(prefix):].startswith(tuple(gmap)):
+      #get character from list
       count = 0
       for x in glist:
         if messagecontent[len(prefix):].startswith(x.lower()):
