@@ -220,8 +220,8 @@ async def on_message(message):
           await sentMessage.edit(embed=embed)
           return
         continue
-      else:
-        await error(message, "Account does not exist.")
+    else:
+      await error(message, "Account does not exist.")
   
   
   #write new dict
