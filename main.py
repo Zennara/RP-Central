@@ -73,7 +73,10 @@ def check(m):
     if str(m.author.id) not in db[(str(m.guild.id))]["accounts"].keys():
       db[(str(m.guild.id))]["accounts"][str(m.author.id)] = {}
     if m.content not in db[str(m.guild.id)]["accounts"][str(m.author.id)]:
-      return True
+      if len(m.content) < 81 and len(m.content) > 1:
+        return True
+      else:
+        asyncio.create_task(error(m, "Character name must be between **1** and **80**."))
     else:
       asyncio.create_task(error(m, "Character already exists.")) 
 #check if url is valid
@@ -274,14 +277,16 @@ async def on_message(message):
         await message.channel.send(embed=embed)
       else:
         await error(message, "Character does not exist.")
-    #change prefix
-    if messagecontent.startswith(prefix + "prefix"):
-      db[str(message.guild.id)]["prefix"] = messagecontent.split()[1:][0]
-      embed = discord.Embed(color=0x00FF00, description ="Prefix is now `" + messagecontent.split()[1:][0] + "`")
-      embed.set_author(name="Prefix Change")
-      await message.channel.send(embed=embed)
     else:
       await error(message, "You do not have the proper role.")
+
+        
+  #change prefix
+  if messagecontent.startswith(prefix + "prefix"):
+    db[str(message.guild.id)]["prefix"] = messagecontent.split()[1:][0]
+    embed = discord.Embed(color=0x00FF00, description ="Prefix is now `" + messagecontent.split()[1:][0] + "`")
+    embed.set_author(name="Prefix Change")
+    await message.channel.send(embed=embed)
 
 
   #help command
