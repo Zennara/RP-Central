@@ -122,6 +122,11 @@ async def on_message(message):
   #declare database
   global db
 
+  #check for bots
+  if message.author.bot:
+    return
+  print(1)
+
   #get prefix
   prefix = db[str(message.guild.id)]["prefix"]
 
