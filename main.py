@@ -133,6 +133,25 @@ async def on_message(message):
   print("\n\nCONTENT: " +message.content)
   print("\nMODDEDCONT: " +messagecontent)
 
+  #role
+  if messagecontent.startswith(prefix+"role"):
+    msgcontent = messagecontent.replace('<','').replace('>','').replace('@','').replace('&','')
+    try:
+      if message.guild.get_role(int(msgcontent[len(prefix)+5:])):
+        db[str(message.guild.id)]["role"] = msgcontent[len(prefix)+5:]
+        text = "Role required for commands and characters is now "+message.guild.get_role(int(msgcontent[len(prefix)+5:])).mention+"."
+      elif msgcontent[len(prefix)+5:] == "0":
+        db[str(message.guild.id)]["role"] = ""
+        text = "Anyone can now create characters and perform commands."
+      else:
+        await error(message, "Invalid role mention or ID.")
+        return
+      embed = discord.Embed(color=0x00FF00, description = text)
+      await message.channel.send(embed=embed)
+    except:
+      await error(message, "Invalid role mention or ID.")
+
+
   #globals
   global globalMsg
   global attach
