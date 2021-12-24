@@ -68,18 +68,13 @@ def check(m):
   if m.content.lower() == "cancel":
     done = True
     return True
-  print(1)
   if m.author == globalMsg.author:
-    print(2)
     #test and create account for user
     if str(m.author.id) not in db[(str(m.guild.id))]["accounts"].keys():
-      print(3)
       db[(str(m.guild.id))]["accounts"][str(m.author.id)] = {}
     if m.content not in db[str(m.guild.id)]["accounts"][str(m.author.id)]:
-      print(4)
       return True
     else:
-      print(5)
       asyncio.create_task(error(m, "Character already exists.")) 
 #check if url is valid
 def checkURL(m):
@@ -89,9 +84,7 @@ def checkURL(m):
   if m.content.lower() == "cancel":
     done = True
     return True
-  print(globalMsg.author)
   if m.author == globalMsg.author:
-    print(11)
     if m.content.lower() == "na":
       return True
     if m.content.lower().startswith("http") and m.content.lower().endswith((".png",".jpg",".jpeg")):
@@ -230,7 +223,6 @@ async def on_message(message):
 
   #delete character
   if messagecontent.startswith(prefix + "del"):
-    print(message.content[len(prefix)+4:])
     if message.content[len(prefix)+4:] in db[str(message.guild.id)]["accounts"][str(message.author.id)]:
       del db[str(message.guild.id)]["accounts"][str(message.author.id)][message.content[len(prefix)+4:]]
       embed = discord.Embed(color=0x00FF00, description = message.author.name+"'s character, **"+message.content[len(prefix)+4:]+"**, was deleted.")
@@ -265,9 +257,7 @@ async def on_message(message):
         embed.set_author(name=message.author.name + "'s Characters")
         await message.channel.send(embed=embed)
         #loop through characters
-        print(333)
         for x in db[(str(message.guild.id))]["accounts"][str(message.author.id)]:
-          print(444)
           embed = discord.Embed(color=0xFFFFFF)
           embed.set_author(name=x)
           embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][x] if db[str(message.guild.id)]["accounts"][str(message.author.id)][x] != "na" else "")
