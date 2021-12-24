@@ -109,6 +109,14 @@ def checkURL(m):
       else:
         asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))
 
+#check if player has role
+def checkRole(message):
+  if db[str(message.guild.id)]["role"] == "":
+    return True
+  else:
+    if message.guild.get_role(int(db[str(message.guild.id)]["role"])) in message.author.roles:
+      return True
+
 @client.event
 async def on_message(message):
   #declare database
@@ -136,13 +144,22 @@ async def on_message(message):
   #role
   if messagecontent.startswith(prefix+"role"):
     msgcontent = messagecontent.replace('<','').replace('>','').replace('@','').replace('&','')
+    #check to only display
+    if messagecontent == prefix+"role":
+      if db[str(message.guild.id)]["role"] == "":
+        text = "Anyone can create characters and perform RP commands."
+      else:
+        text = "The role required to create characters and perform RP commands is "+message.guild.get_role(int(db[str(message.guild.id)]["role"])).mention
+      embed = discord.Embed(color=0x00FF00, description = text)
+      await message.channel.send(embed=embed)
+      return
     try:
       if message.guild.get_role(int(msgcontent[len(prefix)+5:])):
         db[str(message.guild.id)]["role"] = msgcontent[len(prefix)+5:]
         text = "Role required for commands and characters is now "+message.guild.get_role(int(msgcontent[len(prefix)+5:])).mention+"."
       elif msgcontent[len(prefix)+5:] == "0":
         db[str(message.guild.id)]["role"] = ""
-        text = "Anyone can now create characters and perform commands."
+        text = "Anyone can now create characters and perform RP commands."
       else:
         await error(message, "Invalid role mention or ID.")
         return
@@ -157,83 +174,86 @@ async def on_message(message):
   global attach
   #edit character
   if messagecontent.startswith(prefix + "edit"):
-    globalMsg = message
-    if message.content[len(prefix)+5:] in db[str(message.guild.id)]["accounts"][str(message.author.id)]:
-      #get character from list
-      glist =  list(db[str(message.guild.id)]["accounts"][str(message.author.id)].keys())
-      count = 0
-      for x in glist:
-        if message.content[len(prefix)+5:].startswith(x):
-          break
-        count += 1
-      character =glist[count]
-      embed2 = discord.Embed(color=0xFFFFFF, description="React for that edit or ◀️ to finish.\n\n:label: | **Character Name**\n:frame_photo: | **Profile Picture**")
-      embed2.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
-      sentMessage = await message.channel.send(embed=embed2)
-      #add reactions
-      await sentMessage.add_reaction('◀️')
-      await sentMessage.add_reaction('🏷️')
-      await sentMessage.add_reaction('🖼️')
-      #reaction def
-      async def removeR(reaction, user):
-        await reaction.remove(user)
-      def checkReact(reaction, user):
-        asyncio.create_task(removeR(reaction, user))
-        if user == message.author and str(reaction.emoji) in ("◀️","🏷️","🖼️"):
-          return True
-      while True:
-        #define starting embed
+    if checkRole(message):
+      globalMsg = message
+      if message.content[len(prefix)+5:] in db[str(message.guild.id)]["accounts"][str(message.author.id)]:
+        #get character from list
+        glist =  list(db[str(message.guild.id)]["accounts"][str(message.author.id)].keys())
+        count = 0
+        for x in glist:
+          if message.content[len(prefix)+5:].startswith(x):
+            break
+          count += 1
+        character =glist[count]
         embed2 = discord.Embed(color=0xFFFFFF, description="React for that edit or ◀️ to finish.\n\n:label: | **Character Name**\n:frame_photo: | **Profile Picture**")
         embed2.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
-        await sentMessage.edit(embed=embed2)
-        reaction, user = await client.wait_for('reaction_add', check=checkReact)
-        #seperate emojis
-        if str(reaction.emoji) == "🏷️":
-          embed = discord.Embed(color=0xFFFFFF, description="Please enter your new character name.\nEnter `cancel` to go back.")
-          embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
-          await sentMessage.edit(embed=embed)
-          msg = await client.wait_for('message', check=check)
-          global done
-          if done:
-            continue
-          #remake key
-          db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
-          del db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
-          character = msg.content
-          #confirmation message
-          embed = discord.Embed(color=0x00FF00, description="Your characters name was changed to **" + msg.content + "**.")
-          embed.set_author(name="@" + message.author.name)
-          #embed.set_thumbnail(url= db[str(message.author.id)]["accounts"][str(message.author.id)][character])
-          await message.channel.send(embed=embed)
-        elif str(reaction.emoji) == "🖼️":
-          embed = discord.Embed(color=0xFFFFFF, description="Please enter a new image URL for your character, or type `NA` for no image.\nEnter `cancel` to go back.")
-          embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
-          await sentMessage.edit(embed=embed)
-          url = await client.wait_for('message', check=checkURL)
-          if done:
-            continue
-          #get thumbnail url for characters
-          if url.content == "na":
-            thumb = ""
-          elif attach:
-            thumb = url.attachments[0].url
-          else:
-            thumb = url.content
-          #remake key
-          db[str(message.guild.id)]["accounts"][str(message.author.id)][character] = thumb
-          #confirmation message
-          embed = discord.Embed(color=0x00FF00, description="Your character, **"+character+"'s** image was set to:")
-          embed.set_author(name="@" + message.author.name)
-          embed.set_thumbnail(url=thumb)
-          await message.channel.send(embed=embed)
-        elif str(reaction.emoji) == "◀️":
-          await sentMessage.clear_reactions()
-          embed = discord.Embed(color=0x00FF00, description = "Editing Complete")
-          await sentMessage.edit(embed=embed)
-          return
-        continue
+        sentMessage = await message.channel.send(embed=embed2)
+        #add reactions
+        await sentMessage.add_reaction('◀️')
+        await sentMessage.add_reaction('🏷️')
+        await sentMessage.add_reaction('🖼️')
+        #reaction def
+        async def removeR(reaction, user):
+          await reaction.remove(user)
+        def checkReact(reaction, user):
+          asyncio.create_task(removeR(reaction, user))
+          if user == message.author and str(reaction.emoji) in ("◀️","🏷️","🖼️"):
+            return True
+        while True:
+          #define starting embed
+          embed2 = discord.Embed(color=0xFFFFFF, description="React for that edit or ◀️ to finish.\n\n:label: | **Character Name**\n:frame_photo: | **Profile Picture**")
+          embed2.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+          await sentMessage.edit(embed=embed2)
+          reaction, user = await client.wait_for('reaction_add', check=checkReact)
+          #seperate emojis
+          if str(reaction.emoji) == "🏷️":
+            embed = discord.Embed(color=0xFFFFFF, description="Please enter your new character name.\nEnter `cancel` to go back.")
+            embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+            await sentMessage.edit(embed=embed)
+            msg = await client.wait_for('message', check=check)
+            global done
+            if done:
+              continue
+            #remake key
+            db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
+            del db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
+            character = msg.content
+            #confirmation message
+            embed = discord.Embed(color=0x00FF00, description="Your characters name was changed to **" + msg.content + "**.")
+            embed.set_author(name="@" + message.author.name)
+            #embed.set_thumbnail(url= db[str(message.author.id)]["accounts"][str(message.author.id)][character])
+            await message.channel.send(embed=embed)
+          elif str(reaction.emoji) == "🖼️":
+            embed = discord.Embed(color=0xFFFFFF, description="Please enter a new image URL for your character, or type `NA` for no image.\nEnter `cancel` to go back.")
+            embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+            await sentMessage.edit(embed=embed)
+            url = await client.wait_for('message', check=checkURL)
+            if done:
+              continue
+            #get thumbnail url for characters
+            if url.content == "na":
+              thumb = ""
+            elif attach:
+              thumb = url.attachments[0].url
+            else:
+              thumb = url.content
+            #remake key
+            db[str(message.guild.id)]["accounts"][str(message.author.id)][character] = thumb
+            #confirmation message
+            embed = discord.Embed(color=0x00FF00, description="Your character, **"+character+"'s** image was set to:")
+            embed.set_author(name="@" + message.author.name)
+            embed.set_thumbnail(url=thumb)
+            await message.channel.send(embed=embed)
+          elif str(reaction.emoji) == "◀️":
+            await sentMessage.clear_reactions()
+            embed = discord.Embed(color=0x00FF00, description = "Editing Complete")
+            await sentMessage.edit(embed=embed)
+            return
+          continue
+      else:
+        await error(message, "Account does not exist.")
     else:
-      await error(message, "Account does not exist.")
+      await error(message, "You do not have the proper role.")
   
   
   #write new dict
@@ -242,24 +262,27 @@ async def on_message(message):
 
   #delete character
   if messagecontent.startswith(prefix + "del"):
-    if message.content[len(prefix)+4:] in db[str(message.guild.id)]["accounts"][str(message.author.id)]:
-      del db[str(message.guild.id)]["accounts"][str(message.author.id)][message.content[len(prefix)+4:]]
-      embed = discord.Embed(color=0x00FF00, description = message.author.name+"'s character, **"+message.content[len(prefix)+4:]+"**, was deleted.")
-      embed.set_author(name="Character Deletion")
+    if checkRole(message):
+      if message.content[len(prefix)+4:] in db[str(message.guild.id)]["accounts"][str(message.author.id)]:
+        del db[str(message.guild.id)]["accounts"][str(message.author.id)][message.content[len(prefix)+4:]]
+        embed = discord.Embed(color=0x00FF00, description = message.author.name+"'s character, **"+message.content[len(prefix)+4:]+"**, was deleted.")
+        embed.set_author(name="Character Deletion")
+        await message.channel.send(embed=embed)
+      else:
+        await error(message, "Character does not exist.")
+    #change prefix
+    if messagecontent.startswith(prefix + "prefix"):
+      db[str(message.guild.id)]["prefix"] = messagecontent.split()[1:][0]
+      embed = discord.Embed(color=0x00FF00, description ="Prefix is now `" + messagecontent.split()[1:][0] + "`")
+      embed.set_author(name="Prefix Change")
       await message.channel.send(embed=embed)
     else:
-      await error(message, "Character does not exist.")
-  #change prefix
-  if messagecontent.startswith(prefix + "prefix"):
-    db[str(message.guild.id)]["prefix"] = messagecontent.split()[1:][0]
-    embed = discord.Embed(color=0x00FF00, description ="Prefix is now `" + messagecontent.split()[1:][0] + "`")
-    embed.set_author(name="Prefix Change")
-    await message.channel.send(embed=embed)
+      await error(message, "You do not have the proper role.")
 
 
   #help command
   if messagecontent == prefix + "help":
-    text= "My prefix is `" + prefix + "`. You can change this at any time with `" + prefix + "prefix`.\n\n`"+prefix+"help` - *Displays this message!*\n`"+prefix+"create` - *Create a new character.*\n`"+prefix+"characters` - *Display your characters.*\n`"+prefix+"<character> [#channel] [message]` - *Send a message as your character.*\n`"+prefix+"del <character>` - *Deletes a character.*\n`"+prefix+"edit <character>` - *Edit your character*"
+    text= "My prefix is `" + prefix + "`. You can change this at any time with `" + prefix + "prefix`.\n\n`"+prefix+"help` - *Displays this message!*\n`"+prefix+"create` - *Create a new character.*\n`"+prefix+"characters` - *Display your characters.*\n`"+prefix+"<character> [#channel] [message]` - *Send a message as your character.*\n`"+prefix+"del <character>` - *Deletes a character.*\n`"+prefix+"edit <character>` - *Edit your character*\n`"+prefix+"role [newRole]` - *Changes the role required for commands. Enter 0 for everyone.*"
     embed = discord.Embed(color=0x00FF00, description = text)
     embed.set_author(name="RP Central Help")
     embed.set_footer(text= "________________________\n<> Required | [] Optional\nMade By Zennara#8377")
@@ -268,23 +291,26 @@ async def on_message(message):
 
   #list your characters
   if messagecontent == prefix + "characters":
-    #check if user is in database
-    if str(message.author.id) in db[(str(message.guild.id))]["accounts"].keys():
-      #check if user has character
-      if db[str(message.guild.id)]["accounts"][str(message.author.id)].value!= {}:
-        embed = discord.Embed(color=0x00FF00)
-        embed.set_author(name=message.author.name + "'s Characters")
-        await message.channel.send(embed=embed)
-        #loop through characters
-        for x in db[(str(message.guild.id))]["accounts"][str(message.author.id)]:
-          embed = discord.Embed(color=0xFFFFFF)
-          embed.set_author(name=x)
-          embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][x] if db[str(message.guild.id)]["accounts"][str(message.author.id)][x] != "na" else "")
+    if checkRole(message):
+      #check if user is in database
+      if str(message.author.id) in db[(str(message.guild.id))]["accounts"].keys():
+        #check if user has character
+        if db[str(message.guild.id)]["accounts"][str(message.author.id)].value!= {}:
+          embed = discord.Embed(color=0x00FF00)
+          embed.set_author(name=message.author.name + "'s Characters")
           await message.channel.send(embed=embed)
+          #loop through characters
+          for x in db[(str(message.guild.id))]["accounts"][str(message.author.id)]:
+            embed = discord.Embed(color=0xFFFFFF)
+            embed.set_author(name=x)
+            embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][x] if db[str(message.guild.id)]["accounts"][str(message.author.id)][x] != "na" else "")
+            await message.channel.send(embed=embed)
+        else:
+          await error(message, message.author.name + " does not have any characters.")
       else:
         await error(message, message.author.name + " does not have any characters.")
     else:
-      await error(message, message.author.name + " does not have any characters.")
+      await error(message, "You do not have the proper role.")
 
 
   #create new character
@@ -292,43 +318,46 @@ async def on_message(message):
   attach = False
   done = False
   if messagecontent == prefix + "create":
-    embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.\nEnter `cancel` to stop.")
-    embed.set_author(name="📝 | @" + message.author.name)
-    sentMessage = await message.channel.send(embed=embed)
-    #wait for response message for name
-    #set global message
-    globalMsg = message
-    msg = await client.wait_for('message', check=check)
-    #check done
-    if done:
-      embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+    if checkRole(message):
+      embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.\nEnter `cancel` to stop.")
+      embed.set_author(name="📝 | @" + message.author.name)
+      sentMessage = await message.channel.send(embed=embed)
+      #wait for response message for name
+      #set global message
+      globalMsg = message
+      msg = await client.wait_for('message', check=check)
+      #check done
+      if done:
+        embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+        await sentMessage.edit(embed=embed)
+        return
+      #edit embed
+      embed = discord.Embed(color=0xFFFFFF, description="Please enter an image URL for your character, or type `NA` for no image.\nEnter `cancel` to stop.")
+      embed.set_author(name="📝 | @" + message.author.name)
       await sentMessage.edit(embed=embed)
-      return
-    #edit embed
-    embed = discord.Embed(color=0xFFFFFF, description="Please enter an image URL for your character, or type `NA` for no image.\nEnter `cancel` to stop.")
-    embed.set_author(name="📝 | @" + message.author.name)
-    await sentMessage.edit(embed=embed)
-    #image url
-    url = await client.wait_for('message', check=checkURL)
-    #check done
-    if done:
-      embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+      #image url
+      url = await client.wait_for('message', check=checkURL)
+      #check done
+      if done:
+        embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+        await sentMessage.edit(embed=embed)
+        return
+      #confirmation message
+      embed = discord.Embed(color=0x00FF00, description="Your character, **" + msg.content + "**, was created.")
+      embed.set_author(name="@" + message.author.name)
+      #get thumbnail url for characters
+      if url.content == "na":
+        thumb = ""
+      elif attach:
+        thumb = url.attachments[0].url
+      else:
+        thumb = url.content
+      embed.set_thumbnail(url=thumb)
       await sentMessage.edit(embed=embed)
-      return
-    #confirmation message
-    embed = discord.Embed(color=0x00FF00, description="Your character, **" + msg.content + "**, was created.")
-    embed.set_author(name="@" + message.author.name)
-    #get thumbnail url for characters
-    if url.content == "na":
-      thumb = ""
-    elif attach:
-      thumb = url.attachments[0].url
+      #create character
+      db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = thumb
     else:
-      thumb = url.content
-    embed.set_thumbnail(url=thumb)
-    await sentMessage.edit(embed=embed)
-    #create character
-    db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = thumb
+      await error(message, "You do not have the proper role.")
   
 
   #send message as bot
@@ -342,47 +371,50 @@ async def on_message(message):
     glist = list(db[str(message.guild.id)]["accounts"][str(message.author.id)].keys())
     gmap = map(lambda x: x.lower(), glist)
     if messagecontent[len(prefix):].startswith(tuple(gmap)):
-      #get character from list
-      count = 0
-      for x in glist:
-        if messagecontent[len(prefix):].startswith(x.lower()):
-          break
-        count += 1
-      character = glist[count]
-      #check if message is channel mention
-      if messagecontent[len(prefix)+len(glist[count])+1:].startswith("<#"):
-        #check if message is long enough
-        if len(messagecontent) >= len(prefix)+len(glist[count])+22:
-          #check if there is valid channel
-          try:
-            chnl = message.guild.get_channel(int(messagecontent[len(prefix)+len(glist[count])+3:len(prefix)+len(glist[count])+21]))
-            chnlCheck = True
-          except:
+      if checkRole(message):
+        #get character from list
+        count = 0
+        for x in glist:
+          if messagecontent[len(prefix):].startswith(x.lower()):
+            break
+          count += 1
+        character = glist[count]
+        #check if message is channel mention
+        if messagecontent[len(prefix)+len(glist[count])+1:].startswith("<#"):
+          #check if message is long enough
+          if len(messagecontent) >= len(prefix)+len(glist[count])+22:
+            #check if there is valid channel
+            try:
+              chnl = message.guild.get_channel(int(messagecontent[len(prefix)+len(glist[count])+3:len(prefix)+len(glist[count])+21]))
+              chnlCheck = True
+            except:
+              await error(message, "Invalid channel. Please mention the channel.")
+              errorCh=True
+          else:
             await error(message, "Invalid channel. Please mention the channel.")
             errorCh=True
+        #get correct text (remove channel)
+        if chnlCheck:
+          gtext = message.content[len(prefix)+len(glist[count])+22:]
         else:
-          await error(message, "Invalid channel. Please mention the channel.")
-          errorCh=True
-      #get correct text (remove channel)
-      if chnlCheck:
-        gtext = message.content[len(prefix)+len(glist[count])+22:]
+          gtext = message.content[len(prefix)+len(glist[count]):]
+        #send message
+        if not errorCh:
+          #get all files
+          files = []
+          for ach in message.attachments:
+            files.append(await ach.to_file())
+          #get webhook
+          hooks = await chnl.webhooks()
+          if hooks:
+            webhook = hooks[0]
+          else:
+            webhook= await chnl.create_webhook(name="RPCentral Required",avatar=None,reason="For the RP Central send msg command.")
+          await webhook.send(username=character, avatar_url=db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] if db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] != "na" else "", content=gtext, files=files)
+          #delete old message
+          await message.delete()
       else:
-        gtext = message.content[len(prefix)+len(glist[count]):]
-      #send message
-      if not errorCh:
-        #get all files
-        files = []
-        for ach in message.attachments:
-          files.append(await ach.to_file())
-        #get webhook
-        hooks = await chnl.webhooks()
-        if hooks:
-          webhook = hooks[0]
-        else:
-          webhook= await chnl.create_webhook(name="RPCentral Required",avatar=None,reason="For the RP Central send msg command.")
-        await webhook.send(username=character, avatar_url=db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] if db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] != "na" else "", content=gtext, files=files)
-        #delete old message
-        await message.delete()     
+        await error(message, "You do not have the proper role.")
 
 
 keep_alive.keep_alive() 
