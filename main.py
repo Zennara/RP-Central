@@ -283,10 +283,13 @@ async def on_message(message):
         
   #change prefix
   if messagecontent.startswith(prefix + "prefix"):
-    db[str(message.guild.id)]["prefix"] = messagecontent.split()[1:][0]
-    embed = discord.Embed(color=0x00FF00, description ="Prefix is now `" + messagecontent.split()[1:][0] + "`")
-    embed.set_author(name="Prefix Change")
-    await message.channel.send(embed=embed)
+    if not any(x in messagecontent for x in ["<",">","@","&"]):
+      db[str(message.guild.id)]["prefix"] = message.content.split()[1:][0]
+      embed = discord.Embed(color=0x00FF00, description ="Prefix is now `" + message.content.split()[1:][0] + "`")
+      embed.set_author(name="Prefix Change")
+      await message.channel.send(embed=embed)
+    else:
+      await error(message, "Prefix can not contain `<` , `>` , `@` , `&`")
 
 
   #help command
