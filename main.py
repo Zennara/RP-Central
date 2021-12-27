@@ -120,6 +120,13 @@ def checkRole(message):
     if message.guild.get_role(int(db[str(message.guild.id)]["role"])) in message.author.roles:
       return True
 
+#check if member has proper permissions
+def checkPerms(message):
+  if message.author.guild_permissions.manage_webhooks:
+    return True
+  else:
+    asyncio.create_task(error(message, "You do not have the valid permission: `Manage Webhooks`."))
+
 @client.event
 async def on_message(message):
   #declare database
@@ -150,30 +157,31 @@ async def on_message(message):
 
   #role
   if messagecontent.startswith(prefix+"role"):
-    msgcontent = messagecontent.replace('<','').replace('>','').replace('@','').replace('&','')
-    #check to only display
-    if messagecontent == prefix+"role":
-      if db[str(message.guild.id)]["role"] == "":
-        text = "Anyone can create characters and perform RP commands."
-      else:
-        text = "The role required to create characters and perform RP commands is "+message.guild.get_role(int(db[str(message.guild.id)]["role"])).mention
-      embed = discord.Embed(color=0x00FF00, description = text)
-      await message.channel.send(embed=embed)
-      return
-    try:
-      if message.guild.get_role(int(msgcontent[len(prefix)+5:])):
-        db[str(message.guild.id)]["role"] = msgcontent[len(prefix)+5:]
-        text = "Role required for commands and characters is now "+message.guild.get_role(int(msgcontent[len(prefix)+5:])).mention+"."
-      elif msgcontent[len(prefix)+5:] == "0":
-        db[str(message.guild.id)]["role"] = ""
-        text = "Anyone can now create characters and perform RP commands."
-      else:
-        await error(message, "Invalid role mention or ID.")
+    if checkPerms(message):
+      msgcontent = messagecontent.replace('<','').replace('>','').replace('@','').replace('&','')
+      #check to only display
+      if messagecontent == prefix+"role":
+        if db[str(message.guild.id)]["role"] == "":
+          text = "Anyone can create characters and perform RP commands."
+        else:
+          text = "The role required to create characters and perform RP commands is "+message.guild.get_role(int(db[str(message.guild.id)]["role"])).mention
+        embed = discord.Embed(color=0x00FF00, description = text)
+        await message.channel.send(embed=embed)
         return
-      embed = discord.Embed(color=0x00FF00, description = text)
-      await message.channel.send(embed=embed)
-    except:
-      await error(message, "Invalid role mention or ID.")
+      try:
+        if message.guild.get_role(int(msgcontent[len(prefix)+5:])):
+          db[str(message.guild.id)]["role"] = msgcontent[len(prefix)+5:]
+          text = "Role required for commands and characters is now "+message.guild.get_role(int(msgcontent[len(prefix)+5:])).mention+"."
+        elif msgcontent[len(prefix)+5:] == "0":
+          db[str(message.guild.id)]["role"] = ""
+          text = "Anyone can now create characters and perform RP commands."
+        else:
+          await error(message, "Invalid role mention or ID.")
+          return
+        embed = discord.Embed(color=0x00FF00, description = text)
+        await message.channel.send(embed=embed)
+      except:
+        await error(message, "Invalid role mention or ID.")
 
 
   #globals
@@ -265,7 +273,8 @@ async def on_message(message):
   
   #write new dict
   if messagecontent == "z/clear":
-    db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
+    if checkPerms(message):
+      db[str(message.guild.id)] = {"prefix" : "z/", "role": "", "accounts":{}}
 
   #delete character
   if messagecontent.startswith(prefix + "del"):
@@ -283,13 +292,14 @@ async def on_message(message):
         
   #change prefix
   if messagecontent.startswith(prefix + "prefix"):
-    if not any(x in messagecontent for x in ["<",">","@","&"]):
-      db[str(message.guild.id)]["prefix"] = message.content.split()[1:][0]
-      embed = discord.Embed(color=0x00FF00, description ="Prefix is now `" + message.content.split()[1:][0] + "`")
-      embed.set_author(name="Prefix Change")
-      await message.channel.send(embed=embed)
-    else:
-      await error(message, "Prefix can not contain `<` , `>` , `@` , `&`")
+    if checkPerms(message):
+      if not any(x in messagecontent for x in ["<",">","@","&"]):
+        db[str(message.guild.id)]["prefix"] = message.content.split()[1:][0]
+        embed = discord.Embed(color=0x00FF00, description ="Prefix is now `" + message.content.split()[1:][0] + "`")
+        embed.set_author(name="Prefix Change")
+        await message.channel.send(embed=embed)
+      else:
+        await error(message, "Prefix can not contain `<` , `>` , `@` , `&`")
 
 
   #help command
