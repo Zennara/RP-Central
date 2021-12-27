@@ -58,14 +58,16 @@ async def error(message, code):
   embed = discord.Embed(color=0xff0000, description=code)
   await message.channel.send(embed=embed)
 
-global done
+
 done=False
 #check for msg
 def check(m):
   global globalMsg
-  global done
+  global prefix
   #check if done
-  if m.content.lower() == "cancel":
+  print(prefix)
+  if m.content.lower() == "cancel" or m.content.startswith(prefix):
+    global done
     done = True
     return True
   if m.author == globalMsg.author:
@@ -82,9 +84,10 @@ def check(m):
 #check if url is valid
 def checkURL(m):
   global attach
-  global done
   global globalMsg
-  if m.content.lower() == "cancel":
+  print(prefix)
+  if m.content.lower() == "cancel" or m.content.startswith(prefix):
+    global done
     done = True
     return True
   if m.author == globalMsg.author:
@@ -137,6 +140,7 @@ async def on_message(message):
     return
 
   #get prefix
+  global prefix
   prefix = db[str(message.guild.id)]["prefix"]
 
   DUMP = True
@@ -187,6 +191,7 @@ async def on_message(message):
   #globals
   global globalMsg
   global attach
+  global done
   #edit character
   if messagecontent.startswith(prefix + "edit"):
     if checkRole(message):
@@ -240,7 +245,6 @@ async def on_message(message):
                 await sentMessage.clear_reactions()
                 return
               else:
-                global done
                 if done:
                   continue
                 #remake key
@@ -359,8 +363,8 @@ async def on_message(message):
   #create new character
   #default var vals
   attach = False
-  done = False
   if messagecontent == prefix + "create":
+    done = False
     if checkRole(message):
       embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.\nEnter `cancel` to stop.")
       embed.set_author(name="📝 | @" + message.author.name)
