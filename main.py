@@ -362,9 +362,9 @@ async def on_message(message):
 
   #create new character
   #default var vals
-  attach = False
   if messagecontent == prefix + "create":
     done = False
+    attach = False
     if checkRole(message):
       embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.\nEnter `cancel` to stop.")
       embed.set_author(name="📝 | @" + message.author.name)
