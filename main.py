@@ -219,54 +219,75 @@ async def on_message(message):
           embed2 = discord.Embed(color=0xFFFFFF, description="React for that edit or ◀️ to finish.\n\n:label: | **Character Name**\n:frame_photo: | **Profile Picture**")
           embed2.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
           await sentMessage.edit(embed=embed2)
-          reaction, user = await client.wait_for('reaction_add', check=checkReact)
-          #seperate emojis
-          if str(reaction.emoji) == "🏷️":
-            embed = discord.Embed(color=0xFFFFFF, description="Please enter your new character name.\nEnter `cancel` to go back.")
-            embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+          try:
+            reaction, user = await client.wait_for('reaction_add', check=checkReact, timeout=30.0)
+          except asyncio.TimeoutError:
+            embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
             await sentMessage.edit(embed=embed)
-            msg = await client.wait_for('message', check=check)
-            global done
-            if done:
-              continue
-            #remake key
-            db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
-            del db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
-            character = msg.content
-            #confirmation message
-            embed = discord.Embed(color=0x00FF00, description="Your characters name was changed to **" + msg.content + "**.")
-            embed.set_author(name="@" + message.author.name)
-            #embed.set_thumbnail(url= db[str(message.author.id)]["accounts"][str(message.author.id)][character])
-            await message.channel.send(embed=embed)
-          elif str(reaction.emoji) == "🖼️":
-            embed = discord.Embed(color=0xFFFFFF, description="Please enter a new image URL for your character, or type `NA` for no image.\nEnter `cancel` to go back.")
-            embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
-            await sentMessage.edit(embed=embed)
-            url = await client.wait_for('message', check=checkURL)
-            if done:
-              continue
-            #get thumbnail url for characters
-            if url.content == "na":
-              thumb = ""
-            elif attach:
-              thumb = url.attachments[0].url
-            else:
-              thumb = url.content
-            #remake key
-            db[str(message.guild.id)]["accounts"][str(message.author.id)][character] = thumb
-            #confirmation message
-            embed = discord.Embed(color=0x00FF00, description="Your character, **"+character+"'s** image was set to:")
-            embed.set_author(name="@" + message.author.name)
-            embed.set_thumbnail(url=thumb)
-            await message.channel.send(embed=embed)
-          elif str(reaction.emoji) == "◀️":
             await sentMessage.clear_reactions()
-            embed = discord.Embed(color=0x00FF00, description = "Editing Complete")
-            await sentMessage.edit(embed=embed)
             return
-          continue
-      else:
-        await error(message, "Account does not exist.")
+          else:
+            #seperate emojis
+            if str(reaction.emoji) == "🏷️":
+              embed = discord.Embed(color=0xFFFFFF, description="Please enter your new character name.\nEnter `cancel` to go back.")
+              embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+              await sentMessage.edit(embed=embed)
+              try:
+                msg = await client.wait_for('message', check=check, timeout=30.0)
+              except asyncio.TimeoutError:
+                embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
+                await sentMessage.edit(embed=embed)
+                await sentMessage.clear_reactions()
+                return
+              else:
+                global done
+                if done:
+                  continue
+                #remake key
+                db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
+                del db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
+                character = msg.content
+                #confirmation message
+                embed = discord.Embed(color=0x00FF00, description="Your characters name was changed to **" + msg.content + "**.")
+                embed.set_author(name="@" + message.author.name)
+                #embed.set_thumbnail(url= db[str(message.author.id)]["accounts"][str(message.author.id)][character])
+                await message.channel.send(embed=embed)
+            elif str(reaction.emoji) == "🖼️":
+              embed = discord.Embed(color=0xFFFFFF, description="Please enter a new image URL for your character, or type `NA` for no image.\nEnter `cancel` to go back.")
+              embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+              await sentMessage.edit(embed=embed)
+              try:
+                url = await client.wait_for('message', check=checkURL, timeout=30.0)
+              except asyncio.TimeoutError:
+                embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
+                await sentMessage.edit(embed=embed)
+                await sentMessage.clear_reactions()
+                return
+              else:
+                if done:
+                  continue
+                #get thumbnail url for characters
+                if url.content == "na":
+                  thumb = ""
+                elif attach:
+                  thumb = url.attachments[0].url
+                else:
+                  thumb = url.content
+                #remake key
+                db[str(message.guild.id)]["accounts"][str(message.author.id)][character] = thumb
+                #confirmation message
+                embed = discord.Embed(color=0x00FF00, description="Your character, **"+character+"'s** image was set to:")
+                embed.set_author(name="@" + message.author.name)
+                embed.set_thumbnail(url=thumb)
+                await message.channel.send(embed=embed)
+            elif str(reaction.emoji) == "◀️":
+              await sentMessage.clear_reactions()
+              embed = discord.Embed(color=0x00FF00, description = "Editing Complete")
+              await sentMessage.edit(embed=embed)
+              return
+            continue
+        else:
+          await error(message, "Account does not exist.")
     else:
       await error(message, "You do not have the proper role.")
   
@@ -347,37 +368,48 @@ async def on_message(message):
       #wait for response message for name
       #set global message
       globalMsg = message
-      msg = await client.wait_for('message', check=check)
-      #check done
-      if done:
-        embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+      try:
+        msg = await client.wait_for('message', check=check, timeout=30.0)
+      except asyncio.TimeoutError:
+        embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
         await sentMessage.edit(embed=embed)
-        return
-      #edit embed
-      embed = discord.Embed(color=0xFFFFFF, description="Please enter an image URL for your character, or type `NA` for no image.\nEnter `cancel` to stop.")
-      embed.set_author(name="📝 | @" + message.author.name)
-      await sentMessage.edit(embed=embed)
-      #image url
-      url = await client.wait_for('message', check=checkURL)
-      #check done
-      if done:
-        embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
-        await sentMessage.edit(embed=embed)
-        return
-      #confirmation message
-      embed = discord.Embed(color=0x00FF00, description="Your character, **" + msg.content + "**, was created.")
-      embed.set_author(name="@" + message.author.name)
-      #get thumbnail url for characters
-      if url.content == "na":
-        thumb = ""
-      elif attach:
-        thumb = url.attachments[0].url
       else:
-        thumb = url.content
-      embed.set_thumbnail(url=thumb)
-      await sentMessage.edit(embed=embed)
-      #create character
-      db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = thumb
+        #check done
+        if done:
+          embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+          await sentMessage.edit(embed=embed)
+          return
+        #edit embed
+        embed = discord.Embed(color=0xFFFFFF, description="Please enter an image URL for your character, or type `NA` for no image.\nEnter `cancel` to stop.")
+        embed.set_author(name="📝 | @" + message.author.name)
+        await sentMessage.edit(embed=embed)
+        #image url
+        try:
+          url = await client.wait_for('message', check=checkURL, timeout=30.0)
+        except asyncio.TimeoutError:
+          embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
+          await sentMessage.edit(embed=embed)
+          return
+        else:
+          #check done
+          if done:
+            embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+            await sentMessage.edit(embed=embed)
+            return
+          #confirmation message
+          embed = discord.Embed(color=0x00FF00, description="Your character, **" + msg.content + "**, was created.")
+          embed.set_author(name="@" + message.author.name)
+          #get thumbnail url for characters
+          if url.content == "na":
+            thumb = ""
+          elif attach:
+            thumb = url.attachments[0].url
+          else:
+            thumb = url.content
+          embed.set_thumbnail(url=thumb)
+          await sentMessage.edit(embed=embed)
+          #create character
+          db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = thumb
     else:
       await error(message, "You do not have the proper role.")
   
