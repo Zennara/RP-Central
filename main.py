@@ -59,16 +59,12 @@ async def error(message, code):
   await message.channel.send(embed=embed)
 
 
-done=False
 #check for msg
 def check(m):
   global globalMsg
   global prefix
   #check if done
-  print(prefix)
   if m.content.lower() == "cancel" or m.content.startswith(prefix):
-    global done
-    done = True
     return True
   if m.author == globalMsg.author:
     #test and create account for user
@@ -87,8 +83,6 @@ def checkURL(m):
   global globalMsg
   print(prefix)
   if m.content.lower() == "cancel" or m.content.startswith(prefix):
-    global done
-    done = True
     return True
   if m.author == globalMsg.author:
     if m.content.lower() == "na":
@@ -191,7 +185,6 @@ async def on_message(message):
   #globals
   global globalMsg
   global attach
-  global done
   #edit character
   if messagecontent.startswith(prefix + "edit"):
     if checkRole(message):
@@ -216,7 +209,8 @@ async def on_message(message):
         async def removeR(reaction, user):
           await reaction.remove(user)
         def checkReact(reaction, user):
-          asyncio.create_task(removeR(reaction, user))
+          if user == globalMsg.author:
+            asyncio.create_task(removeR(reaction, user))
           if user == message.author and str(reaction.emoji) in ("◀️","🏷️","🖼️"):
             return True
         while True:
@@ -239,14 +233,14 @@ async def on_message(message):
               await sentMessage.edit(embed=embed)
               try:
                 msg = await client.wait_for('message', check=check, timeout=30.0)
+                if msg.content.lower() == "cancel" or msg.content.startswith(prefix):
+                  continue
               except asyncio.TimeoutError:
                 embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
                 await sentMessage.edit(embed=embed)
                 await sentMessage.clear_reactions()
                 return
               else:
-                if done:
-                  continue
                 #remake key
                 db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
                 del db[str(message.guild.id)]["accounts"][str(message.author.id)][character]
@@ -262,16 +256,16 @@ async def on_message(message):
               await sentMessage.edit(embed=embed)
               try:
                 url = await client.wait_for('message', check=checkURL, timeout=30.0)
+                if url.content.lower() == "cancel" or url.content.startswith(prefix):
+                  continue
               except asyncio.TimeoutError:
                 embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
                 await sentMessage.edit(embed=embed)
                 await sentMessage.clear_reactions()
                 return
               else:
-                if done:
-                  continue
                 #get thumbnail url for characters
-                if url.content == "na":
+                if url.content.lower() == "na":
                   thumb = ""
                 elif attach:
                   thumb = url.attachments[0].url
@@ -363,7 +357,6 @@ async def on_message(message):
   #create new character
   #default var vals
   if messagecontent == prefix + "create":
-    done = False
     attach = False
     if checkRole(message):
       embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.\nEnter `cancel` to stop.")
@@ -374,15 +367,14 @@ async def on_message(message):
       globalMsg = message
       try:
         msg = await client.wait_for('message', check=check, timeout=30.0)
+        if msg.content.lower() == "cancel" or msg.content.startswith(prefix):
+          embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+          await sentMessage.edit(embed=embed)
+          return
       except asyncio.TimeoutError:
         embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
         await sentMessage.edit(embed=embed)
       else:
-        #check done
-        if done:
-          embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
-          await sentMessage.edit(embed=embed)
-          return
         #edit embed
         embed = discord.Embed(color=0xFFFFFF, description="Please enter an image URL for your character, or type `NA` for no image.\nEnter `cancel` to stop.")
         embed.set_author(name="📝 | @" + message.author.name)
@@ -390,21 +382,21 @@ async def on_message(message):
         #image url
         try:
           url = await client.wait_for('message', check=checkURL, timeout=30.0)
+          #check if done
+          if url.content.lower() == "cancel" or url.content.startswith(prefix):
+            embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+            await sentMessage.edit(embed=embed)
+            return
         except asyncio.TimeoutError:
           embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
           await sentMessage.edit(embed=embed)
           return
         else:
-          #check done
-          if done:
-            embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
-            await sentMessage.edit(embed=embed)
-            return
           #confirmation message
           embed = discord.Embed(color=0x00FF00, description="Your character, **" + msg.content + "**, was created.")
           embed.set_author(name="@" + message.author.name)
           #get thumbnail url for characters
-          if url.content == "na":
+          if url.content.lower() == "na":
             thumb = ""
           elif attach:
             thumb = url.attachments[0].url
