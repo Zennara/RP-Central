@@ -58,54 +58,74 @@ async def error(message, code):
   embed = discord.Embed(color=0xff0000, description=code)
   await message.channel.send(embed=embed)
 
+#check for reaction
+  #reaction def
+async def removeR(reaction, user):
+  await reaction.remove(user)
+def checkReact(reaction, user):
+  return not user.bot
+def betterCheckReact(reaction, user, message):
+  if str(reaction.emoji) in ("◀️","🏷️","🖼️"):
+    if reaction.message == message:
+      asyncio.create_task(removeR(reaction, user))
+      return True
 
 #check for msg
 def check(m):
-  global globalMsg
+  return not m.author.bot
+#used because check cant pass variables
+def betterCheck(m, message):
   #get prefix
   prefix = db[str(m.guild.id)]["prefix"]
-  if m.author == globalMsg.author:
-    #check if done
-    if m.content.lower() == "cancel" or m.content.startswith(prefix):
+  #check if done or cancel
+  if m.content.lower() == "cancel" or m.content.lower().startswith(prefix):
+    return True
+  #test and create account for user
+  if str(m.author.id) not in db[(str(m.guild.id))]["accounts"].keys():
+    db[(str(m.guild.id))]["accounts"][str(m.author.id)] = {}
+  if m.content not in db[str(m.guild.id)]["accounts"][str(m.author.id)]:
+    if len(m.content) < 81 and len(m.content) > 1:
       return True
-    #test and create account for user
-    if str(m.author.id) not in db[(str(m.guild.id))]["accounts"].keys():
-      db[(str(m.guild.id))]["accounts"][str(m.author.id)] = {}
-    if m.content not in db[str(m.guild.id)]["accounts"][str(m.author.id)]:
-      if len(m.content) < 81 and len(m.content) > 1:
-        return True
-      else:
-        asyncio.create_task(error(m, "Character name must be between **1** and **80**."))
     else:
-      asyncio.create_task(error(m, "Character already exists.")) 
+      asyncio.create_task(error(m, "Character name must be between **1** and **80**."))
+  else:
+    asyncio.create_task(error(m, "Character already exists.")) 
+
 #check if url is valid
 def checkURL(m):
-  global globalMsg
+  return not m.author.bot
+#used because check cant pass variables
+def betterCheckURL(m, message, attachments):
   #get prefix
   prefix = db[str(m.guild.id)]["prefix"]
-  if m.author == globalMsg.author:
-    if m.content.lower() == "cancel" or m.content.lower().startswith(prefix) or m.content.lower() == "na":
+  if m.content.lower() == "cancel" or m.content.lower().startswith(prefix) or m.content.lower() == "na":
+    return True
+  if m.content.lower().startswith("http") and m.content.lower().endswith((".png",".jpg",".jpeg")):
+    #test if content is valid picture url
+    image_formats = ("image/png", "image/jpeg", "image/jpg")
+    try:
+      r = requests.head(m.content, timeout=3)
+    except:
+      asyncio.create_task(error(m, "Connection Timeout. Check your URL."))
+      return False
+    if r.headers["content-type"] in image_formats:
       return True
-    if m.content.lower().startswith("http") and m.content.lower().endswith((".png",".jpg",".jpeg")):
-      #test if content is valid picture url
-      image_formats = ("image/png", "image/jpeg", "image/jpg")
-      try:
-        r = requests.head(m.content, timeout=3)
-      except:
-        asyncio.create_task(error(m, "Connection Timeout. Check your URL."))
-        return False
-      if r.headers["content-type"] in image_formats:
-        return True
-    else:
+  else:
     #ensure list contains element
-      if m.attachments:
-        #get url
-        if m.attachments[0].url.lower().startswith("http") and m.attachments[0].url.lower().endswith((".png",".jpeg",".jpg")):
-          return True
-        else:
-          asyncio.create_task(error(m, "Invalid Attachment Type."))   
+    print(2)
+    print(m)
+    if attachments:
+      #get url
+      print(3)
+      if attachments[0].url.lower().startswith("http") and attachments[0].url.lower().endswith((".png",".jpeg",".jpg")):
+        print(4)
+        return True
       else:
-        asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))
+        print(5)
+        asyncio.create_task(error(m, "Invalid Attachment Type."))   
+    else:
+      print(6)
+      asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))
 
 #check if player has role
 def checkRole(message):
@@ -179,12 +199,9 @@ async def on_message(message):
         await error(message, "Invalid role mention or ID.")
 
 
-  #globals
-  global globalMsg
   #edit character
   if messagecontent.startswith(prefix + "edit"):
     if checkRole(message):
-      globalMsg = message
       if message.content[len(prefix)+5:] in db[str(message.guild.id)]["accounts"][str(message.author.id)]:
         #get character from list
         glist =  list(db[str(message.guild.id)]["accounts"][str(message.author.id)].keys())
@@ -201,21 +218,17 @@ async def on_message(message):
         await sentMessage.add_reaction('◀️')
         await sentMessage.add_reaction('🏷️')
         await sentMessage.add_reaction('🖼️')
-        #reaction def
-        async def removeR(reaction, user):
-          await reaction.remove(user)
-        def checkReact(reaction, user):
-          if user == globalMsg.author:
-            asyncio.create_task(removeR(reaction, user))
-          if user == message.author and str(reaction.emoji) in ("◀️","🏷️","🖼️"):
-            return True
         while True:
           #define starting embed
           embed2 = discord.Embed(color=0xFFFFFF, description="React for that edit or ◀️ to finish.\n\n:label: | **Character Name**\n:frame_photo: | **Profile Picture**")
           embed2.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
           await sentMessage.edit(embed=embed2)
           try:
-            reaction, user = await client.wait_for('reaction_add', check=checkReact, timeout=30.0)
+            while True:
+              reaction, user = await client.wait_for('reaction_add', check=checkReact, timeout=30.0)
+              if user.id == message.author.id:
+                if betterCheckReact(reaction, user, sentMessage):
+                  break
           except asyncio.TimeoutError:
             embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
             await sentMessage.edit(embed=embed)
@@ -228,8 +241,17 @@ async def on_message(message):
               embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
               await sentMessage.edit(embed=embed)
               try:
-                msg = await client.wait_for('message', check=check, timeout=30.0)
-                if msg.content.lower() == "cancel" or msg.content.lower().startswith(prefix):
+                while True:
+                  done = False
+                  msg = await client.wait_for('message', check=check, timeout=30.0)
+                  #check for author and guild
+                  if msg.author == message.author and msg.guild == message.guild:
+                    if msg.content.lower() == "cancel" or msg.content.lower().startswith(prefix):
+                      done = True
+                      break
+                    if betterCheck(msg, message):
+                      break
+                if done:
                   continue
               except asyncio.TimeoutError:
                 embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
@@ -250,8 +272,17 @@ async def on_message(message):
               embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
               await sentMessage.edit(embed=embed)
               try:
-                url = await client.wait_for('message', check=checkURL, timeout=30.0)
-                if url.content.lower() == "cancel" or url.content.lower().startswith(prefix):
+                while True:
+                  done = False
+                  url = await client.wait_for('message', check=checkURL, timeout=30.0)
+                  #check author and guild
+                  if url.author == message.author and url.guild == message.guild:
+                    if url.content.lower() == "cancel" or url.content.lower().startswith(prefix) or url.content.lower() == "na":
+                      done = True
+                      break
+                    if betterCheckURL(url, message, url.attachments):
+                      break
+                if done and not url.content.lower() == "na":
                   continue
               except asyncio.TimeoutError:
                 embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
@@ -366,13 +397,17 @@ async def on_message(message):
       sentMessage = await message.channel.send(embed=embed)
       #wait for response message for name
       #set global message
-      globalMsg = message
       try:
-        msg = await client.wait_for('message', check=check, timeout=30.0)
-        if msg.content.lower() == "cancel" or msg.content.lower().startswith(prefix):
-          embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
-          await sentMessage.edit(embed=embed)
-          return
+        while True:
+          msg = await client.wait_for('message', check=check, timeout=30.0)
+          #check for guild and author
+          if msg.author == message.author and msg.guild == message.guild:
+            if msg.content.lower() == "cancel" or msg.content.lower().startswith(prefix):
+              embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+              await sentMessage.edit(embed=embed)
+              return
+            if betterCheck(msg, message):
+              break
       except asyncio.TimeoutError:
         embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
         await sentMessage.edit(embed=embed)
@@ -383,12 +418,20 @@ async def on_message(message):
         await sentMessage.edit(embed=embed)
         #image url
         try:
-          url = await client.wait_for('message', check=checkURL, timeout=30.0)
-          #check if done
-          if url.content.lower() == "cancel" or url.content.lower().startswith(prefix):
-            embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
-            await sentMessage.edit(embed=embed)
-            return
+          while True:
+            url = await client.wait_for('message', check=checkURL, timeout=30.0)
+            #check for guild and author
+            if url.author == message.author and url.guild == message.guild:
+              #check for no image
+              if url.content.lower() == "na":
+                break
+              #check if done
+              if url.content.lower() == "cancel" or url.content.lower().startswith(prefix):
+                embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+                await sentMessage.edit(embed=embed)
+                return
+              if betterCheckURL(url, message, url.attachments):
+                break
         except asyncio.TimeoutError:
           embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
           await sentMessage.edit(embed=embed)
