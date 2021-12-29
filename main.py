@@ -63,10 +63,10 @@ async def error(message, code):
 def check(m):
   global globalMsg
   global prefix
-  #check if done
-  if m.content.lower() == "cancel" or m.content.startswith(prefix):
-    return True
   if m.author == globalMsg.author:
+    #check if done
+    if m.content.lower() == "cancel" or m.content.startswith(prefix):
+      return True
     #test and create account for user
     if str(m.author.id) not in db[(str(m.guild.id))]["accounts"].keys():
       db[(str(m.guild.id))]["accounts"][str(m.author.id)] = {}
@@ -81,11 +81,8 @@ def check(m):
 def checkURL(m):
   global attach
   global globalMsg
-  print(prefix)
-  if m.content.lower() == "cancel" or m.content.startswith(prefix):
-    return True
   if m.author == globalMsg.author:
-    if m.content.lower() == "na":
+    if m.content.lower() == "cancel" or m.content.lower().startswith(prefix) or m.content.lower() == "na":
       return True
     if m.content.lower().startswith("http") and m.content.lower().endswith((".png",".jpg",".jpeg")):
       #test if content is valid picture url
@@ -233,7 +230,7 @@ async def on_message(message):
               await sentMessage.edit(embed=embed)
               try:
                 msg = await client.wait_for('message', check=check, timeout=30.0)
-                if msg.content.lower() == "cancel" or msg.content.startswith(prefix):
+                if msg.content.lower() == "cancel" or msg.content.lower().startswith(prefix):
                   continue
               except asyncio.TimeoutError:
                 embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
@@ -248,7 +245,6 @@ async def on_message(message):
                 #confirmation message
                 embed = discord.Embed(color=0x00FF00, description="Your characters name was changed to **" + msg.content + "**.")
                 embed.set_author(name="@" + message.author.name)
-                #embed.set_thumbnail(url= db[str(message.author.id)]["accounts"][str(message.author.id)][character])
                 await message.channel.send(embed=embed)
             elif str(reaction.emoji) == "🖼️":
               embed = discord.Embed(color=0xFFFFFF, description="Please enter a new image URL for your character, or type `NA` for no image.\nEnter `cancel` to go back.")
@@ -256,7 +252,7 @@ async def on_message(message):
               await sentMessage.edit(embed=embed)
               try:
                 url = await client.wait_for('message', check=checkURL, timeout=30.0)
-                if url.content.lower() == "cancel" or url.content.startswith(prefix):
+                if url.content.lower() == "cancel" or url.content.lower().startswith(prefix):
                   continue
               except asyncio.TimeoutError:
                 embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
@@ -313,7 +309,7 @@ async def on_message(message):
   if messagecontent.startswith(prefix + "prefix"):
     if checkPerms(message):
       if not any(x in messagecontent for x in ["<",">","@","&"]):
-        db[str(message.guild.id)]["prefix"] = message.content.split()[1:][0]
+        db[str(message.guild.id)]["prefix"] = message.content.lower().split()[1:][0]
         embed = discord.Embed(color=0x00FF00, description ="Prefix is now `" + message.content.split()[1:][0] + "`")
         embed.set_author(name="Prefix Change")
         await message.channel.send(embed=embed)
@@ -367,7 +363,7 @@ async def on_message(message):
       globalMsg = message
       try:
         msg = await client.wait_for('message', check=check, timeout=30.0)
-        if msg.content.lower() == "cancel" or msg.content.startswith(prefix):
+        if msg.content.lower() == "cancel" or msg.content.lower().startswith(prefix):
           embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
           await sentMessage.edit(embed=embed)
           return
@@ -383,7 +379,7 @@ async def on_message(message):
         try:
           url = await client.wait_for('message', check=checkURL, timeout=30.0)
           #check if done
-          if url.content.lower() == "cancel" or url.content.startswith(prefix):
+          if url.content.lower() == "cancel" or url.content.lower().startswith(prefix):
             embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
             await sentMessage.edit(embed=embed)
             return
