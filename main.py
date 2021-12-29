@@ -62,7 +62,8 @@ async def error(message, code):
 #check for msg
 def check(m):
   global globalMsg
-  global prefix
+  #get prefix
+  prefix = db[str(m.guild.id)]["prefix"]
   if m.author == globalMsg.author:
     #check if done
     if m.content.lower() == "cancel" or m.content.startswith(prefix):
@@ -81,6 +82,8 @@ def check(m):
 def checkURL(m):
   global attach
   global globalMsg
+  #get prefix
+  prefix = db[str(m.guild.id)]["prefix"]
   if m.author == globalMsg.author:
     if m.content.lower() == "cancel" or m.content.lower().startswith(prefix) or m.content.lower() == "na":
       return True
@@ -131,7 +134,6 @@ async def on_message(message):
     return
 
   #get prefix
-  global prefix
   prefix = db[str(message.guild.id)]["prefix"]
 
   DUMP = True
