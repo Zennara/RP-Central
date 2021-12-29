@@ -80,7 +80,6 @@ def check(m):
       asyncio.create_task(error(m, "Character already exists.")) 
 #check if url is valid
 def checkURL(m):
-  global attach
   global globalMsg
   #get prefix
   prefix = db[str(m.guild.id)]["prefix"]
@@ -102,7 +101,6 @@ def checkURL(m):
       if m.attachments:
         #get url
         if m.attachments[0].url.lower().startswith("http") and m.attachments[0].url.lower().endswith((".png",".jpeg",".jpg")):
-          attach = True
           return True
         else:
           asyncio.create_task(error(m, "Invalid Attachment Type."))   
@@ -183,7 +181,6 @@ async def on_message(message):
 
   #globals
   global globalMsg
-  global attach
   #edit character
   if messagecontent.startswith(prefix + "edit"):
     if checkRole(message):
@@ -265,10 +262,15 @@ async def on_message(message):
                 #get thumbnail url for characters
                 if url.content.lower() == "na":
                   thumb = ""
-                elif attach:
-                  thumb = url.attachments[0].url
                 else:
-                  thumb = url.content
+                  if url.attachments:
+                  #get url
+                    if url.attachments[0].url.lower().startswith("http") and url.attachments[0].url.lower().endswith((".png",".jpeg",".jpg")):
+                      thumb = url.attachments[0].url
+                    else:
+                      thumb = url.content
+                  else:
+                    thumb = url.content
                 #remake key
                 db[str(message.guild.id)]["accounts"][str(message.author.id)][character] = thumb
                 #confirmation message
@@ -355,7 +357,6 @@ async def on_message(message):
   #create new character
   #default var vals
   if messagecontent == prefix + "create":
-    attach = False
     if checkRole(message):
       embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.\nEnter `cancel` to stop.")
       embed.set_author(name="📝 | @" + message.author.name)
@@ -396,10 +397,15 @@ async def on_message(message):
           #get thumbnail url for characters
           if url.content.lower() == "na":
             thumb = ""
-          elif attach:
-            thumb = url.attachments[0].url
           else:
-            thumb = url.content
+            if url.attachments:
+            #get url
+              if url.attachments[0].url.lower().startswith("http") and url.attachments[0].url.lower().endswith((".png",".jpeg",".jpg")):
+                thumb = url.attachments[0].url
+              else:
+                thumb = url.content
+            else:
+              thumb = url.content
           embed.set_thumbnail(url=thumb)
           await sentMessage.edit(embed=embed)
           #create character
