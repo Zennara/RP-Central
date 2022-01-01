@@ -112,19 +112,13 @@ def betterCheckURL(m, message, attachments):
       return True
   else:
     #ensure list contains element
-    print(2)
-    print(m)
     if attachments:
       #get url
-      print(3)
       if attachments[0].url.lower().startswith("http") and attachments[0].url.lower().endswith((".png",".jpeg",".jpg")):
-        print(4)
         return True
       else:
-        print(5)
         asyncio.create_task(error(m, "Invalid Attachment Type."))   
     else:
-      print(6)
       asyncio.create_task(error(m, "Invalid image URL\n`.png`*,* `.jpeg`*, and* `.jpg` *are supported.*"))
 
 #check if player has role
@@ -167,8 +161,8 @@ async def on_message(message):
 
   messagecontent = message.content.lower()
 
-  print("\n\nCONTENT: " +message.content)
-  print("\nMODDEDCONT: " +messagecontent)
+  #print("\n\nCONTENT: " +message.content)
+  #print("\nMODDEDCONT: " +messagecontent)
 
   #role
   if messagecontent.startswith(prefix+"role"):
