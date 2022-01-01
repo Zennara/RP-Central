@@ -396,7 +396,6 @@ async def on_message(message):
       embed.set_author(name="📝 | @" + message.author.name)
       sentMessage = await message.channel.send(embed=embed)
       #wait for response message for name
-      #set global message
       try:
         while True:
           msg = await client.wait_for('message', check=check, timeout=30.0)
@@ -506,9 +505,16 @@ async def on_message(message):
             files.append(await ach.to_file())
           #get webhook
           hooks = await chnl.webhooks()
+          hookFind = False
           if hooks:
-            webhook = hooks[0]
-          else:
+            x=0
+            for hook in hooks:
+              if hook.token != None:
+                webhook = hooks[x]
+                hookFind = True
+                break
+              x += 1
+          if not hookFind:
             webhook= await chnl.create_webhook(name="RPCentral Required",avatar=None,reason="For the RP Central send msg command.")
           await webhook.send(username=character, avatar_url=db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] if db[str(message.guild.id)]["accounts"][str(message.author.id)][glist[count]] != "na" else "", content=gtext, files=files)
           #delete old message
