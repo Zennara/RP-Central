@@ -12,6 +12,7 @@ from replit import db
 import json
 import requests
 import aiohttp
+import random
 
 #api limit checker
 r = requests.head(url="https://discord.com/api/v1")
@@ -56,6 +57,8 @@ async def on_guild_join(guild):
 
 async def error(message, code):
   embed = discord.Embed(color=0xff0000, description=code)
+  if random.randint(1,4) == 1:
+    embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
   await message.channel.send(embed=embed)
 
 #check for reaction
@@ -141,6 +144,8 @@ async def on_message(message):
   #declare database
   global db
 
+  monetize = random.randint(1,4) == 1
+
   #check for bots
   if message.author.bot:
     return
@@ -188,6 +193,8 @@ async def on_message(message):
           await error(message, "Invalid role mention or ID.")
           return
         embed = discord.Embed(color=0x00FF00, description = text)
+        if monetize:
+          embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
         await message.channel.send(embed=embed)
       except:
         await error(message, "Invalid role mention or ID.")
@@ -207,6 +214,8 @@ async def on_message(message):
         character =glist[count]
         embed2 = discord.Embed(color=0xFFFFFF, description="React for that edit or ◀️ to finish.\n\n:label: | **Character Name**\n:frame_photo: | **Profile Picture**")
         embed2.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+        if monetize:
+          embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
         sentMessage = await message.channel.send(embed=embed2)
         #add reactions
         await sentMessage.add_reaction('◀️')
@@ -216,6 +225,8 @@ async def on_message(message):
           #define starting embed
           embed2 = discord.Embed(color=0xFFFFFF, description="React for that edit or ◀️ to finish.\n\n:label: | **Character Name**\n:frame_photo: | **Profile Picture**")
           embed2.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+          if monetize:
+            embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
           await sentMessage.edit(embed=embed2)
           try:
             while True:
@@ -225,6 +236,8 @@ async def on_message(message):
                   break
           except asyncio.TimeoutError:
             embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
+            if monetize:
+              embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
             await sentMessage.edit(embed=embed)
             await sentMessage.clear_reactions()
             return
@@ -233,6 +246,8 @@ async def on_message(message):
             if str(reaction.emoji) == "🏷️":
               embed = discord.Embed(color=0xFFFFFF, description="Please enter your new character name.\nEnter `cancel` to go back.")
               embed.set_author(name="|  " + character, icon_url= db[str(message.guild.id)]["accounts"][str(message.author.id)][str(character)])
+              if monetize:
+                embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
               await sentMessage.edit(embed=embed)
               try:
                 while True:
@@ -249,6 +264,8 @@ async def on_message(message):
                   continue
               except asyncio.TimeoutError:
                 embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
+                if monetize:
+                  embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
                 await sentMessage.edit(embed=embed)
                 await sentMessage.clear_reactions()
                 return
@@ -260,6 +277,8 @@ async def on_message(message):
                 #confirmation message
                 embed = discord.Embed(color=0x00FF00, description="Your characters name was changed to **" + msg.content + "**.")
                 embed.set_author(name="@" + message.author.name)
+                if monetize:
+                  embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
                 await message.channel.send(embed=embed)
             elif str(reaction.emoji) == "🖼️":
               embed = discord.Embed(color=0xFFFFFF, description="Please enter a new image URL for your character, or type `NA` for no image.\nEnter `cancel` to go back.")
@@ -280,6 +299,8 @@ async def on_message(message):
                   continue
               except asyncio.TimeoutError:
                 embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
+                if monetize:
+                  embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
                 await sentMessage.edit(embed=embed)
                 await sentMessage.clear_reactions()
                 return
@@ -302,10 +323,14 @@ async def on_message(message):
                 embed = discord.Embed(color=0x00FF00, description="Your character, **"+character+"'s** image was set to:")
                 embed.set_author(name="@" + message.author.name)
                 embed.set_thumbnail(url=thumb)
+                if monetize:
+                  embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
                 await message.channel.send(embed=embed)
             elif str(reaction.emoji) == "◀️":
               await sentMessage.clear_reactions()
               embed = discord.Embed(color=0x00FF00, description = "Editing Complete")
+              if monetize:
+                embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
               await sentMessage.edit(embed=embed)
               return
             continue
@@ -327,6 +352,8 @@ async def on_message(message):
         del db[str(message.guild.id)]["accounts"][str(message.author.id)][message.content[len(prefix)+4:]]
         embed = discord.Embed(color=0x00FF00, description = message.author.name+"'s character, **"+message.content[len(prefix)+4:]+"**, was deleted.")
         embed.set_author(name="Character Deletion")
+        if monetize:
+          embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
         await message.channel.send(embed=embed)
       else:
         await error(message, "Character does not exist.")
@@ -342,6 +369,8 @@ async def on_message(message):
           db[str(message.guild.id)]["prefix"] = message.content.lower().split()[1:][0]
           embed = discord.Embed(color=0x00FF00, description ="Prefix is now `" + message.content.split()[1:][0] + "`")
           embed.set_author(name="Prefix Change")
+          if monetize:
+            embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
           await message.channel.send(embed=embed)
         else:
           await error(message, "Prefix must be between `1` and `3` characters.")
@@ -355,6 +384,7 @@ async def on_message(message):
     embed = discord.Embed(color=0x00FF00, description = text)
     embed.set_author(name="RP Central Help")
     embed.set_footer(text= "________________________\n<> Required | [] Optional\nMade By Zennara#8377")
+    embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
     await message.channel.send(embed=embed)
 
 
@@ -373,6 +403,8 @@ async def on_message(message):
             embed = discord.Embed(color=0xFFFFFF)
             embed.set_author(name=x)
             embed.set_thumbnail(url=db[str(message.guild.id)]["accounts"][str(message.author.id)][x] if db[str(message.guild.id)]["accounts"][str(message.author.id)][x] != "na" else "")
+            if monetize:
+              embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
             await message.channel.send(embed=embed)
         else:
           await error(message, message.author.name + " does not have any characters.")
@@ -388,6 +420,8 @@ async def on_message(message):
     if checkRole(message):
       embed = discord.Embed(color=0xFFFFFF, description="Please enter your character name.\nEnter `cancel` to stop.")
       embed.set_author(name="📝 | @" + message.author.name)
+      if monetize:
+        embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
       sentMessage = await message.channel.send(embed=embed)
       #wait for response message for name
       try:
@@ -397,17 +431,23 @@ async def on_message(message):
           if msg.author == message.author and msg.guild == message.guild:
             if msg.content.lower() == "cancel" or msg.content.lower().startswith(prefix):
               embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+              if monetize:
+                embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
               await sentMessage.edit(embed=embed)
               return
             if betterCheck(msg, message):
               break
       except asyncio.TimeoutError:
         embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
+        if monetize:
+          embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
         await sentMessage.edit(embed=embed)
       else:
         #edit embed
         embed = discord.Embed(color=0xFFFFFF, description="Please enter an image URL for your character, or type `NA` for no image.\nEnter `cancel` to stop.")
         embed.set_author(name="📝 | @" + message.author.name)
+        if monetize:
+          embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
         await sentMessage.edit(embed=embed)
         #image url
         try:
@@ -421,12 +461,16 @@ async def on_message(message):
               #check if done
               if url.content.lower() == "cancel" or url.content.lower().startswith(prefix):
                 embed = discord.Embed(color=0x00FF00, description="Character creation cancelled.")
+                if monetize:
+                  embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
                 await sentMessage.edit(embed=embed)
                 return
               if betterCheckURL(url, message, url.attachments):
                 break
         except asyncio.TimeoutError:
           embed = discord.Embed(color=0xff0000, description="TImed out. Interactive messages time out after `30` seconds.")
+          if monetize:
+            embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
           await sentMessage.edit(embed=embed)
           return
         else:
@@ -446,6 +490,8 @@ async def on_message(message):
             else:
               thumb = url.content
           embed.set_thumbnail(url=thumb)
+          if monetize:
+            embed.add_field(name="᲼",value="\n:smile: Enjoy free hosting? Consider [donating](https://www.paypal.me/keaganlandfried)")
           await sentMessage.edit(embed=embed)
           #create character
           db[str(message.guild.id)]["accounts"][str(message.author.id)][msg.content] = thumb
